@@ -182,14 +182,14 @@ vorpal
 vorpal
   .command('documents', 'Returns /documents')
   .action(function(args, callback) {
-    fetchDataAndLog('/documents');
+    getData('/documents');
     callback();
   });
 
 vorpal
   .command('documents notes', 'Returns /documents/notes')
   .action(function(args, callback) {
-    fetchDataAndLog('/documents/notes');
+    getData('/documents/notes');
     callback();
   });
 
@@ -201,7 +201,7 @@ vorpal
 vorpal
     .command('list', 'Returns /contexts')
     .action(function(args, callback) {
-        fetchDataAndLog('/contexts');
+        getData('/contexts');
         callback();
     });
 
