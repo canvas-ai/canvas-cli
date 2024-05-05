@@ -46,6 +46,12 @@ const httpClient = axios.create({
     timeout: config.timeout,
 });
 
+// Quick & dirty session management
+var session = {
+    sessionId: 'default',
+    contextId: 'default',
+};
+
 
 /**
  * Utility functions
@@ -60,17 +66,17 @@ const apiReachable = async () => {
     }
 }
 
-function setPromptPath(path) {
-    const styledPrompt = chalk.bold.hex('#FF69B4')(`[${path}] > `);
+function setPromptPath(path, sessionId = 'default') {
+    const styledPrompt = `${sessionId}:[${path}] > `;
     vorpal.delimiter(styledPrompt);
     // vorpal.ui.delimiter(stripAnsi(styledPrompt));
 }
 
 function updatePrompt() {
-    httpClient.get('/context/path')
+    httpClient.get('/context/path?sessionId=' + session.sessionId)
         .then(response => {
             const contextPath = response.data.payload;
-            setPromptPath(contextPath);
+            setPromptPath(contextPath, session.sessionId);
         }).catch(error => {
             vorpal.log('Error fetching context path:', error.message);
             setPromptPath('Canvas Server not reachable');
@@ -87,7 +93,11 @@ function getData(path) {
 }
 
 function postData(path, data) {
-    httpClient.post(path, data)
+    httpClient.post(path, JSON.stringify({
+        sessionId: session.sessionId,
+        contextId: session.contextId,
+        ...data
+    }))
         .then(response => {
             vorpal.log(response.data.payload);
         }).catch(error => {
@@ -168,7 +178,9 @@ vorpal
     .action(function (args, callback) {
         this.log(`Setting context to: ${args.path}`);
         postData('/context/url', JSON.stringify({
-            url: args.path
+            url: args.path,
+            sessionId: session.sessionId,
+            contextId: session.contextId
         }));
         setPromptPath(args.path);
         callback();
@@ -192,6 +204,27 @@ vorpal
     getData('/documents/notes');
     callback();
   });
+
+
+/**
+ * Sessions API
+ */
+
+vorpal
+    .command('sessions list', 'Returns /sessions')
+    .action(function(args, callback) {
+        getData('/sessions');
+        callback();
+    });
+
+vorpal
+    .command('sessions set <sessionId>', 'Sets a session')
+    .action(function(args, callback) {
+        this.log(`Setting session to: ${args.sessionId}`);
+        session.sessionId = args.sessionId;
+        updatePrompt();
+        callback();
+    });
 
 
 /**
