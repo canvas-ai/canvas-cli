@@ -14,19 +14,23 @@ const path = require('path');
 
 // Default configuration
 let config = {
-    protocol: 'http',
-    host: '127.0.0.1',
-    port: 8001,
-    baseUri: '/rest/v1',
-    auth: {
-        type: 'token',
-        token: 'canvas-rest-api',
-    },
-    timeout: 2000,
+    transports: {
+        rest: {
+            protocol: 'http',
+            host: '127.0.0.1',
+            port: 8000,
+            baseUrl: '/rest/v1',
+            auth: {
+                type: 'token',
+                token: 'canvas-server-token',
+            },
+            timeout: 2000
+        }
+    }
 };
 
 // Load configuration from default location
-const configPath = path.join(os.homedir(), '.canvas', 'config', 'transports.rest.json');
+const configPath = path.join(os.homedir(), '.canvas', 'config', 'client.json');
 if (fs.existsSync(configPath)) {
     try {
         const loadedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -36,14 +40,16 @@ if (fs.existsSync(configPath)) {
     }
 }
 
+const restConfig = config.transports.rest;
+
 // Initialize HTTP client
 const httpClient = axios.create({
-    baseURL: `${config.protocol}://${config.host}:${config.port}${config.baseUri}`,
+    baseURL: `${restConfig.protocol}://${restConfig.host}:${restConfig.port}${restConfig.baseUrl}`,
     headers: {
-        Authorization: `Bearer ${config.auth.token}`,
+        Authorization: `Bearer ${restConfig.auth.token}`,
         'Content-Type': 'application/json',
     },
-    timeout: config.timeout,
+    timeout: restConfig.timeout,
 });
 
 // Quick & dirty session management
@@ -177,11 +183,11 @@ vorpal
     .command('context set <path>', 'Set context to the given path')
     .action(function (args, callback) {
         this.log(`Setting context to: ${args.path}`);
-        postData('/context/url', JSON.stringify({
+        postData('/context/url', {
             url: args.path,
             sessionId: session.sessionId,
             contextId: session.contextId
-        }));
+        });
         setPromptPath(args.path);
         callback();
     });
