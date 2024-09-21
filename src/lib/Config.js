@@ -32,9 +32,9 @@ const DEFAULT_CONFIG = {
                 type: 'token',
                 token: 'canvas-server-token',
             },
-            timeout: 2000
-        }
-    }
+            timeout: 2000,
+        },
+    },
 };
 
 // Simple and stupid, please replace with Conf

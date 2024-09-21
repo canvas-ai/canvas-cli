@@ -1,13 +1,13 @@
-const debug = require('debug')('canvas:cli:utils')
+const debug = require('debug')('canvas:cli:utils');
 const fs = require('fs');
-const exit = (code) => { process.exit(code); }
+const exit = (code) => { process.exit(code); };
 
 async function parseInput(input, parsedArgs) {
     // Parse the args array "_" to get the CLI "action"
-    const command = parsedArgs['_'][0] || null //'list' or help
-    const args = parsedArgs['_'].shift() && parsedArgs['_'] || null
-    const options = delete(parsedArgs['_']) && parsedArgs || null
-    const data = input || null
+    const command = parsedArgs['_'][0] || null; //'list' or help
+    const args = parsedArgs['_'].shift() && parsedArgs['_'] || null;
+    const options = delete(parsedArgs['_']) && parsedArgs || null;
+    const data = input || null;
 
     debug('command:', command);
     debug('args:', args);
@@ -16,30 +16,30 @@ async function parseInput(input, parsedArgs) {
 
     // Parse the context array
     // Providing context as a parameter won't change the global context
-    let contextArray = []
+    let contextArray = [];
     if (parsedArgs['context']) {
         contextArray = (typeof parsedArgs['context'] === 'string') ?
             [parsedArgs['context']] :
-            parsedArgs['context']
+            parsedArgs['context'];
     }
 
     // Parse the "features" array
     // Features are populated by the runtime itself when adding objects
     // Useful to specify an undetected feature or create a custom one.
-    let featureArray = []
+    let featureArray = [];
     if (parsedArgs['feature']) {
         featureArray = (typeof parsedArgs['feature'] === 'string') ?
             [parsedArgs['feature']] :
-            parsedArgs['feature']
+            parsedArgs['feature'];
     }
 
     // Parse the "filters" array
     // Example: $0 notes -s datetime/today -s name/regexp/^foo/
-    let filterArray = []
+    let filterArray = [];
     if (parsedArgs['filter']) {
         filterArray = (typeof parsedArgs['filter'] === 'string') ?
             [parsedArgs['filter']] :
-            parsedArgs['filter']
+            parsedArgs['filter'];
     }
 
     debug('contextArray:', contextArray);
@@ -72,7 +72,6 @@ function fillPromptTemplate(template, context, documents = [], query) {
 module.exports = {
     parseInput,
     print: console.log, // For testing purposes
-    readPromptTemplate,
     exit,
     readPromptTemplate,
     fillPromptTemplate,
@@ -82,6 +81,6 @@ module.exports = {
         ERROR: 87, // https://xkcd.com/221/
         FAILED: 1,
         SUCCESS: 0,
-    }
+    },
 };
 

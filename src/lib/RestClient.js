@@ -1,4 +1,5 @@
 const axios = require('axios');
+const debug = require('debug')('canvas:cli:rest');
 
 class ClientConnector {
     #config = null;

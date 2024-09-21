@@ -34,6 +34,7 @@
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.1",
     "detect-libc": "^2.0.3",
+    "ip": "^2.0.1",
     "json2csv": "^5.0.6",
     "minimist": "^1.2.8",
     "node-machine-id": "^1.1.12",
@@ -44,11 +45,13 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.11.0",
     "@yao-pkg/pkg": "^5.11.5",
-    "eslint": "^5.16.0",
+    "eslint": "^9.11.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-import-resolver-node": "0.3.7",
-    "eslint-plugin-import": "^2.26.0"
+    "eslint-plugin-import": "^2.26.0",
+    "globals": "^15.9.0"
   },
   "pkg": {
     "outputPath": "bin",

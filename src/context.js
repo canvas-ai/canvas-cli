@@ -13,20 +13,26 @@ const {
     EXIT_CODES,
 } = require('./lib/utils');
 
-// App Includes
-const Config = require('./lib/Config');
 const {
     device,
-    user,
-    generateContextArray
-} = require('./lib/Context');
+    user
+} = require('./lib/env');
 
 /**
  * Configuration
  */
 
+const Config = require('./lib/Config');
 const config = new Config(/** configPath: 'path/to/config' */).loadConfig();
-const clientContext = generateContextArray();
+
+const clientContext = [
+    'client/app/canvas-cli',
+    `client/id/${device.id}`,
+    `client/os/${device.os}`,
+    `client/os/arch/${device.arch}`,
+    `client/os/user/${user.username}`,
+    `client/network/subnet/${device.subnet}`,
+]
 
 /**
  * Transports
@@ -89,7 +95,8 @@ async function exec(execOptions) {
 
     switch (command) {
         // Test
-        case 'q' || 'query':
+        case 'q':
+        case 'query':
             try {
                 const query = args.join(' ');
                 const clientContext = {

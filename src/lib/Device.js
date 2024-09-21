@@ -6,9 +6,7 @@ const os = require('os');
 const ip = require('ip');
 const { familySync } = require('detect-libc');
 
-
 class Device {
-
     constructor() {
         this.id = machineIdSync(true).substr(0, 11);
         this.endianness = os.endianness();
@@ -66,5 +64,5 @@ function getActiveNetworkConnection(returnIPOnly = true) {
             mac: '00:00:00:00:00:00',
             internal: true,
             cidr: '127.0.0.1/8',
-        }
+        };
 }
