@@ -18,11 +18,11 @@ const DEFAULT_CONFIG = {
     user: {
         home: CANVAS_USER_HOME,
     },
-    ollama: {
-        host: 'http://172.16.2.102:11434',
-        defaultModel: 'llama3.1:latest',
-    },
     transports: {
+        ollama: {
+            host: 'http://172.16.2.102:11434',
+            defaultModel: 'llama3.1:latest',
+        },
         rest: {
             protocol: 'http',
             host: '127.0.0.1',

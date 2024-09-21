@@ -12,4 +12,14 @@ module.exports = {
         cwd: process.cwd(),
         localISOTime: new Date().toISOString(),
     },
+    generateContextArray: () => {
+        return [
+            'client/app/canvas-cli',
+            `client/id/${device.id}`,
+            `client/os/${device.os}`,
+            `client/os/arch/${device.arch}`,
+            `client/os/user/${device.user.username}`,
+            `client/network/subnet/${device.subnet}`,
+        ]
+    }
 };
