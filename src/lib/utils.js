@@ -2,7 +2,7 @@ const debug = require('debug')('canvas:cli:utils');
 const fs = require('fs');
 const exit = (code) => { process.exit(code); };
 
-async function parseInput(input, parsedArgs) {
+function parseInput(input, parsedArgs) {
     // Parse the args array "_" to get the CLI "action"
     const command = parsedArgs['_'][0] || null; //'list' or help
     const args = parsedArgs['_'].shift() && parsedArgs['_'] || null;

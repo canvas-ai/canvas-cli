@@ -39,7 +39,7 @@ const clientContext = [
  */
 
 const RestClient = require('./lib/RestClient');
-const canvas = new RestClient({
+const connection = new RestClient({
     sessionPath: path.join(config.user.home, 'var', 'canvas-cli.session.json'),
     connection: config.transports.rest
 });
@@ -65,7 +65,7 @@ const parsedArgs = minimist(process.argv.slice(2), {
 });
 
 const run = async (input) => {
-    const parsed = await parseInput(input, parsedArgs);
+    const parsed = parseInput(input, parsedArgs);
     process.exitCode = await exec(parsed);
     exit(process.exitCode);
 }
@@ -88,7 +88,7 @@ async function exec(execOptions) {
         return EXIT_CODES.ERROR;
     }
 
-    const connection = canvas.connect();
+    //const connection = canvas.connect();//
     const Context = require('./commands/Context');
     const context = new Context(connection);
     let res = null;
@@ -156,7 +156,7 @@ async function exec(execOptions) {
          */
 
         case 'set':
-            res = await context.set(args.join('/'));
+            res = await context.setUrl(args.join('/'));
             if (!res) { return EXIT_CODES.ERROR; }
             print(res);
             return EXIT_CODES.SUCCESS;

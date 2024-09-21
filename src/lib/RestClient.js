@@ -12,6 +12,10 @@ class ClientConnector {
 
         this.#config = options.connection;
         this.isConnected = false;
+
+        // Temporary fix
+        this.#token = this.#config.auth.token;
+
     }
 
     async connect(clientContext) {

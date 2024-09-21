@@ -11,6 +11,11 @@ class Context {
         this.help = 'Context command help';
     }
 
+    async getUrl() {
+        let res = await this.#connection.makeRequest('GET', '/context/url');
+        return res;
+    }
+
     async getID() {
         let res = await this.#connection.makeRequest('GET', '/context/id');
         return res;
