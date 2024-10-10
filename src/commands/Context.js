@@ -9,9 +9,11 @@ class Context {
         this.name = 'context';
         this.description = 'Context command';
         this.help = 'Context command help';
+
     }
 
     async getUrl() {
+        this.#connection.connect();
         let res = await this.#connection.makeRequest('GET', '/context/url');
         return res;
     }

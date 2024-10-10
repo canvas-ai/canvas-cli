@@ -4,6 +4,7 @@
   "description": "Canvas CLI",
   "author": "me@idnc.sk",
   "license": "AGPL-3.0-or-later",
+
   "bin": {
     "cq": "bin/cq",
     "context": "bin/context",
@@ -36,6 +37,7 @@
     "detect-libc": "^2.0.3",
     "ip": "^2.0.1",
     "json2csv": "^5.0.6",
+    "llamaindex": "^0.6.15",
     "minimist": "^1.2.8",
     "node-machine-id": "^1.1.12",
     "ollama": "^0.5.9",
