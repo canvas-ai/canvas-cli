@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
     transports: {
         ollama: {
             host: 'http://172.16.2.102:11434',
-            defaultModel: 'llama3.1:latest',
+            defaultModel: 'qwen2.5-coder:14b',
         },
         rest: {
             protocol: 'http',

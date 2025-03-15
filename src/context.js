@@ -32,7 +32,11 @@ const clientContext = [
     `client/os/arch/${device.arch}`,
     `client/os/user/${user.username}`,
     `client/network/subnet/${device.subnet}`,
+    `client/date/${Date.localISOTime}`,
+    `client/cwd/${user.cwd}`,
 ]
+
+console.log(clientContext)
 
 /**
  * Transports
