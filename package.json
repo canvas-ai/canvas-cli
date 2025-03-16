@@ -4,6 +4,7 @@
   "description": "Canvas CLI",
   "author": "me@idnc.sk",
   "license": "AGPL-3.0-or-later",
+  "type": "module",
   "bin": {
     "context": "bin/context",
     "ws": "bin/ws",
@@ -31,6 +32,7 @@
     "axios": "^1.8.3",
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.5",
+    "conf": "^13.1.0",
     "date-fns": "^4.1.0",
     "detect-libc": "^2.0.3",
     "figlet": "^1.8.0",
