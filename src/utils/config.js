@@ -58,21 +58,11 @@ const EXIT_CODES = {
 }
 
 const config = new Conf({
+    projectName: 'canvas',
     configName: 'canvas-cli',
-    cwd: CANVAS_USER_CONFIG
+    cwd: CANVAS_USER_CONFIG,
+    defaults: DEFAULT_CONFIG,
 });
-
-if (config.get('server')) {
-    config.set(DEFAULT_CONFIG);
-}
-
-if (config.get('session')) {
-    config.set('session', DEFAULT_CONFIG.session);
-}
-
-if (config.get('connectors')) {
-    config.set('connectors', DEFAULT_CONFIG.connectors);
-}
 
 export default config;
 export {
@@ -83,8 +73,6 @@ export {
     CLIENT_CONTEXT_ARRAY,
     EXIT_CODES,
 };
-
-console.log(config.get('connectors'));
 
 /**
  * Utils
