@@ -68,6 +68,9 @@
       "macos",
       "win"
     ],
+    "engines": {
+      "node": ">=20.0.0 <21.0.0"
+    },
     "assets": [
       "./node_modules/axios/dist/node/axios.cjs"
     ]
