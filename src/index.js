@@ -18,6 +18,7 @@ import ContextCommand from './commands/context.js';
 import DocumentCommand from './commands/document.js';
 import AuthCommand from './commands/auth.js';
 import ConfigCommand from './commands/config.js';
+import ServerCommand from './commands/server.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -42,6 +43,7 @@ const COMMANDS = {
   tab: DocumentCommand, // alias for document with tab schema
   auth: AuthCommand,
   config: ConfigCommand,
+  server: ServerCommand,
   help: null, // handled separately
   version: null // handled separately
 };
@@ -49,9 +51,9 @@ const COMMANDS = {
 /**
  * Main CLI entry point
  */
-async function main() {
+export async function main(argv = process.argv.slice(2)) {
   try {
-    const args = minimist(process.argv.slice(2), {
+    const args = minimist(argv, {
       string: ['context', 'workspace', 'format', 'title', 'tag', 'schema'],
       boolean: ['help', 'version', 'raw', 'verbose', 'debug'],
       alias: {
@@ -78,13 +80,13 @@ async function main() {
     // Handle version
     if (args.version) {
       console.log(`${pkg.name} v${pkg.version}`);
-      return exit(0);
+      return 0;
     }
 
     // Handle help
     if (args.help || args._.length === 0) {
       showHelp();
-      return exit(0);
+      return 0;
     }
 
     // Parse input
@@ -105,7 +107,7 @@ async function main() {
     if (!COMMANDS[command]) {
       console.error(chalk.red(`Unknown command: ${command}`));
       console.error(chalk.yellow('Run "canvas help" for available commands'));
-      return exit(1);
+      return 1;
     }
 
     const CommandClass = COMMANDS[command];
@@ -117,14 +119,14 @@ async function main() {
     }
 
     const exitCode = await commandInstance.execute(parsed);
-    return exit(exitCode);
+    return exitCode;
 
   } catch (error) {
     console.error(chalk.red('Error:'), error.message);
     if (process.env.DEBUG) {
       console.error(error.stack);
     }
-    return exit(1);
+    return 1;
   }
 }
 
@@ -162,6 +164,7 @@ function showHelp() {
   console.log('  tab               Add/manage tabs (document with tab schema)');
   console.log('  auth              Manage authentication');
   console.log('  config            Manage configuration');
+  console.log('  server            Manage local Canvas server (PM2)');
   console.log();
 
   console.log(chalk.bold('Global Options:'));
@@ -175,6 +178,7 @@ function showHelp() {
   console.log();
 
   console.log(chalk.bold('Examples:'));
+  console.log('  canvas server start');
   console.log('  canvas workspace list');
   console.log('  canvas context create /work/project');
   console.log('  canvas note add --title "Meeting notes" < notes.txt');
@@ -186,28 +190,6 @@ function showHelp() {
   console.log(`  Config file: ${config.path}`);
   console.log('  canvas config show');
   console.log('  canvas config set server.url http://localhost:8001/rest/v2');
-}
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error(chalk.red('Uncaught Exception:'), error.message);
-  if (process.env.DEBUG) {
-    console.error(error.stack);
-  }
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error(chalk.red('Unhandled Rejection at:'), promise, chalk.red('reason:'), reason);
-  if (process.env.DEBUG) {
-    console.error(reason.stack);
-  }
-  process.exit(1);
-});
-
-// Run the CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
 }
 
 export default main;
