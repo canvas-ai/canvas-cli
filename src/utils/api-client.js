@@ -88,6 +88,16 @@ export class CanvasApiClient {
         return response.data;
     }
 
+    async startWorkspace(workspaceId) {
+        const response = await this.client.post(`/workspaces/${workspaceId}/start`, { action: 'start' });
+        return response.data;
+    }
+
+    async stopWorkspace(workspaceId) {
+        const response = await this.client.post(`/workspaces/${workspaceId}/stop`, { action: 'stop' });
+        return response.data;
+    }
+
     // Context API methods
     async getContexts(options = {}) {
         const params = new URLSearchParams();
@@ -179,7 +189,7 @@ export class CanvasApiClient {
     }
 
     async logout() {
-        const response = await this.client.post('/auth/logout');
+        const response = await this.client.post('/auth/logout', { action: 'logout' });
         return response.data;
     }
 

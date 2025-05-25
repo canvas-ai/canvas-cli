@@ -142,6 +142,46 @@ export class WorkspaceCommand extends BaseCommand {
         }
     }
 
+    /**
+     * Start workspace
+     */
+    async handleStart(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const response = await this.apiClient.startWorkspace(workspaceId);
+            const workspace = response.payload || response.data || response;
+
+            console.log(chalk.green(`✓ Workspace '${workspace.label || workspace.name || workspaceId}' started successfully`));
+            this.output(workspace, 'workspace');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to start workspace: ${error.message}`);
+        }
+    }
+
+    /**
+     * Stop workspace
+     */
+    async handleStop(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const response = await this.apiClient.stopWorkspace(workspaceId);
+
+            console.log(chalk.green(`✓ Workspace '${workspaceId}' stopped successfully`));
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to stop workspace: ${error.message}`);
+        }
+    }
+
 
 
     /**
@@ -154,6 +194,8 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  create <name>         Create new workspace');
         console.log('  update <id>           Update workspace');
         console.log('  delete <id>           Delete workspace');
+        console.log('  start <id>            Start workspace');
+        console.log('  stop <id>             Stop workspace');
         console.log();
         console.log(chalk.bold('Options:'));
         console.log('  --name <name>         Workspace name (for update)');
@@ -164,12 +206,15 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  canvas workspace list');
         console.log('  canvas workspace create "My Project"');
         console.log('  canvas workspace show universe');
+        console.log('  canvas workspace start universe');
+        console.log('  canvas workspace stop universe');
         console.log('  canvas workspace delete test1 --force');
         console.log();
         console.log(chalk.cyan('Architecture:'));
         console.log('  • Every user has a main workspace called "universe" (their home)');
         console.log('  • Contexts belong to workspaces and reference them by workspaceId');
         console.log('  • Use context commands to work within specific workspace contexts');
+        console.log('  • Start/stop controls workspace lifecycle and resource allocation');
     }
 }
 

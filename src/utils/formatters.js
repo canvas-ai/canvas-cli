@@ -109,6 +109,8 @@ export class WorkspaceFormatter extends BaseFormatter {
             head: [
                 chalk.cyan('ID'),
                 chalk.cyan('Name'),
+                chalk.cyan('Owner'),
+                chalk.cyan('Color'),
                 chalk.cyan('Description'),
                 chalk.cyan('Created'),
                 chalk.cyan('Status')
@@ -121,7 +123,9 @@ export class WorkspaceFormatter extends BaseFormatter {
                 table.push([
                     workspace.id || 'N/A',
                     workspace.label || workspace.name || 'N/A',
-                    this.truncate(workspace.description, 30),
+                    this.truncate(workspace.owner, 20),
+                    this.formatColor(workspace.color),
+                    this.truncate(workspace.description, 25),
                     this.formatDate(workspace.created || workspace.createdAt),
                     workspace.status ? chalk.green(workspace.status) : 'N/A'
                 ]);
@@ -129,6 +133,44 @@ export class WorkspaceFormatter extends BaseFormatter {
         });
 
         return table.toString();
+    }
+
+        /**
+     * Format color field with the actual color styling
+     */
+    formatColor(colorValue) {
+        if (!colorValue) return 'N/A';
+
+        // Convert hex color to chalk color
+        try {
+            // Remove # if present and validate hex format
+            const hex = colorValue.replace('#', '');
+
+            // Validate hex format (should be 6 characters)
+            if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+                return colorValue; // Return uncolored if invalid format
+            }
+
+            // Convert hex to RGB
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+
+            // For very light colors (like white), add a background to make them visible
+            if (r > 240 && g > 240 && b > 240) {
+                // Light color - use dark background
+                return chalk.rgb(r, g, b).bgGray(colorValue);
+            } else if (r < 50 && g < 50 && b < 50) {
+                // Very dark color - use light background
+                return chalk.rgb(r, g, b).bgWhite(colorValue);
+            } else {
+                // Normal color - just color the text
+                return chalk.rgb(r, g, b)(colorValue);
+            }
+        } catch (error) {
+            // Fallback to uncolored text if color parsing fails
+            return colorValue;
+        }
     }
 }
 
