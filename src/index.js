@@ -18,6 +18,7 @@ import ContextCommand from './commands/context.js';
 import AuthCommand from './commands/auth.js';
 import ConfigCommand from './commands/config.js';
 import ServerCommand from './commands/server.js';
+import QCommand from './commands/q.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -36,6 +37,7 @@ const COMMANDS = {
   auth: AuthCommand,
   config: ConfigCommand,
   server: ServerCommand,
+  q: QCommand, // AI query command
   help: null, // handled separately
   version: null // handled separately
 };
@@ -46,8 +48,8 @@ const COMMANDS = {
 export async function main(argv = process.argv.slice(2)) {
   try {
     const args = minimist(argv, {
-      string: ['context', 'workspace', 'format', 'title', 'tag', 'schema'],
-      boolean: ['help', 'version', 'raw', 'verbose', 'debug'],
+      string: ['context', 'workspace', 'format', 'title', 'tag', 'schema', 'connector', 'model', 'template', 'max-tokens'],
+      boolean: ['help', 'version', 'raw', 'verbose', 'debug', 'code', 'quiet'],
       alias: {
         h: 'help',
         v: 'version',
@@ -57,7 +59,8 @@ export async function main(argv = process.argv.slice(2)) {
         t: 'title',
         s: 'schema',
         r: 'raw',
-        d: 'debug'
+        d: 'debug',
+        q: 'quiet'
       }
     });
 
@@ -146,6 +149,7 @@ function showHelp() {
   console.log('  auth              Manage authentication');
   console.log('  config            Manage configuration');
   console.log('  server            Manage local Canvas server (PM2)');
+  console.log('  q                 AI assistant (context-aware)');
   console.log();
 
   console.log(chalk.bold('Global Options:'));
@@ -165,6 +169,8 @@ function showHelp() {
   console.log('  canvas context switch my-project');
   console.log('  canvas ws documents list');
   console.log('  canvas ctx documents add --title "Meeting notes" < notes.txt');
+  console.log('  canvas q "How do I create a new context?"');
+  console.log('  cat error.log | canvas q "What does this error mean?"');
   console.log();
 
   console.log(chalk.bold('Configuration:'));

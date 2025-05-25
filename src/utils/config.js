@@ -61,6 +61,25 @@ const DEFAULT_CONFIG = {
             driver: 'docker',
             host: 'unix:///var/run/docker.sock',
         },
+        anthropic: {
+            driver: 'anthropic',
+            apiKey: process.env.ANTHROPIC_API_KEY || '',
+            model: 'claude-3-5-sonnet-20241022',
+            defaultModel: 'claude-3-5-sonnet-20241022',
+            maxTokens: 4096,
+        },
+        openai: {
+            driver: 'openai',
+            apiKey: process.env.OPENAI_API_KEY || '',
+            model: 'gpt-4o',
+            defaultModel: 'gpt-4o',
+            maxTokens: 4096,
+        },
+    },
+    ai: {
+        defaultConnector: 'anthropic',
+        priority: ['anthropic', 'openai', 'ollama'],
+        contextTemplate: 'canvas-assistant',
     }
 }
 
