@@ -161,7 +161,8 @@ function showHelp() {
   console.log(chalk.bold('Examples:'));
   console.log('  canvas server start');
   console.log('  canvas workspace list');
-  console.log('  canvas context create /work/project');
+  console.log('  canvas context create my-project');
+  console.log('  canvas context switch my-project');
   console.log('  canvas ws documents list');
   console.log('  canvas ctx documents add --title "Meeting notes" < notes.txt');
   console.log();
@@ -173,3 +174,11 @@ function showHelp() {
 }
 
 export default main;
+
+// Execute main function if this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().then(process.exit).catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
+}

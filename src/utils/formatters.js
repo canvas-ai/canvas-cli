@@ -187,8 +187,7 @@ export class ContextFormatter extends BaseFormatter {
             head: [
                 chalk.cyan('ID'),
                 chalk.cyan('Workspace'),
-                chalk.cyan('Path'),
-                chalk.cyan('Name'),
+                chalk.cyan('URL'),
                 chalk.cyan('Documents'),
                 chalk.cyan('Created')
             ],
@@ -197,19 +196,19 @@ export class ContextFormatter extends BaseFormatter {
 
         data.forEach(context => {
             let workspace = 'N/A';
-            let path = 'N/A';
+            let url = context.url || 'N/A';
 
+            // Extract workspace from URL or use workspaceId
             if (context.url && context.url.includes('://')) {
-                [workspace, path] = context.url.split('://');
-            } else if (context.url) {
-                path = context.url;
+                workspace = context.url.split('://')[0];
+            } else if (context.workspaceId) {
+                workspace = context.workspaceId;
             }
 
             table.push([
                 context.id || 'N/A',
                 workspace,
-                this.truncate(path, 30),
-                context.name || 'N/A',
+                this.truncate(url, 40),
                 context.documentCount || '0',
                 this.formatDate(context.created || context.createdAt)
             ]);

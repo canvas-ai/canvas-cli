@@ -129,6 +129,31 @@ export class CanvasApiClient {
         return response.data;
     }
 
+    async getContextUrl(contextId) {
+        const response = await this.client.get(`/contexts/${contextId}/url`);
+        return response.data;
+    }
+
+    async setContextUrl(contextId, url) {
+        const response = await this.client.post(`/contexts/${contextId}/url`, { url });
+        return response.data;
+    }
+
+    async getContextPath(contextId) {
+        const response = await this.client.get(`/contexts/${contextId}/path`);
+        return response.data;
+    }
+
+    async getContextPathArray(contextId) {
+        const response = await this.client.get(`/contexts/${contextId}/path-array`);
+        return response.data;
+    }
+
+    async getContextTree(contextId) {
+        const response = await this.client.get(`/contexts/${contextId}/tree`);
+        return response.data;
+    }
+
     // Document API methods
     async getDocuments(containerId, containerType = 'context', options = {}) {
         const params = new URLSearchParams();
