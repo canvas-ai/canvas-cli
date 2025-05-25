@@ -16,10 +16,25 @@ import ip from 'ip';
 const MACHINE_ID = machineIdSync(true);
 const APP_ID = 'canvas-cli';
 
-const CANVAS_USER_HOME = os.platform() === 'win32' ?
-    path.join(os.homedir(), 'Canvas') :
-    path.join(os.homedir(), '.canvas');
+const USER_HOME = process.env.CANVAS_USER_HOME || getUserHome();
 
+function getUserHome() {
+    const SERVER_MODE = process.env.SERVER_MODE || 'user';
+    const SERVER_HOME = process.env.SERVER_HOME || process.cwd();
+
+    if (SERVER_MODE === 'user') {
+        const homeDir = os.homedir();
+        if (process.platform === 'win32') {
+            return path.join(homeDir, 'Canvas');
+        } else {
+            return path.join(homeDir, '.canvas');
+        }
+    }
+
+    return path.join(SERVER_HOME, 'users');
+}
+
+const CANVAS_USER_HOME = USER_HOME;
 const CANVAS_USER_CONFIG = path.join(CANVAS_USER_HOME, 'config');
 const DEFAULT_CONFIG = {
     server: {
@@ -62,6 +77,7 @@ const config = new Conf({
     configName: 'canvas-cli',
     cwd: CANVAS_USER_CONFIG,
     defaults: DEFAULT_CONFIG,
+    configFileMode: 0o600, // Secure file permissions
 });
 
 export default config;

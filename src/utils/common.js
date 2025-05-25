@@ -4,12 +4,13 @@ import fs from 'fs';
 import debugInstance from 'debug';
 const debug = debugInstance('canvas:cli:utils');
 
-function parseInput(input, parsedArgs) {
+function parseInput(parsedArgs) {
     // Parse the args array "_" to get the CLI "action"
-    const command = parsedArgs['_'][0] || null; //'list' or help
-    const args = parsedArgs['_'].shift() && parsedArgs['_'] || null;
-    const options = delete(parsedArgs['_']) && parsedArgs || null;
-    const data = input || null;
+    const command = parsedArgs['_'][0] || null;
+    const args = parsedArgs['_'].slice(1) || [];
+    const options = { ...parsedArgs };
+    delete options['_'];
+    const data = null; // Will be set later if stdin data is available
 
     debug('command:', command);
     debug('args:', args);
@@ -19,29 +20,29 @@ function parseInput(input, parsedArgs) {
     // Parse the context array
     // Providing context as a parameter won't change the global context
     let contextArray = [];
-    if (parsedArgs['context']) {
-        contextArray = (typeof parsedArgs['context'] === 'string') ?
-            [parsedArgs['context']] :
-            parsedArgs['context'];
+    if (options['context']) {
+        contextArray = (typeof options['context'] === 'string') ?
+            [options['context']] :
+            options['context'];
     }
 
     // Parse the "features" array
     // Features are populated by the runtime itself when adding objects
     // Useful to specify an undetected feature or create a custom one.
     let featureArray = [];
-    if (parsedArgs['feature']) {
-        featureArray = (typeof parsedArgs['feature'] === 'string') ?
-            [parsedArgs['feature']] :
-            parsedArgs['feature'];
+    if (options['feature']) {
+        featureArray = (typeof options['feature'] === 'string') ?
+            [options['feature']] :
+            options['feature'];
     }
 
     // Parse the "filters" array
     // Example: $0 notes -s datetime/today -s name/regexp/^foo/
     let filterArray = [];
-    if (parsedArgs['filter']) {
-        filterArray = (typeof parsedArgs['filter'] === 'string') ?
-            [parsedArgs['filter']] :
-            parsedArgs['filter'];
+    if (options['filter']) {
+        filterArray = (typeof options['filter'] === 'string') ?
+            [options['filter']] :
+            options['filter'];
     }
 
     debug('contextArray:', contextArray);

@@ -1,293 +1,297 @@
-# canvas-cli
+# Canvas CLI
 
-Simple nodejs-based CLI client for interacting with a Canvas server instance.
+A comprehensive command-line interface for managing Canvas workspaces, contexts, and documents.
 
 ## Installation
 
 ```bash
-$ git clone git@github.com:canvas-ai/canvas-cli.git /path/to/cli
-$ cd /path/to/cli
-$ npm install
-$ sudo ln -s $(pwd)/bin/canvas /usr/local/bin/canvas
-$ sudo ln -s $(pwd)/bin/ws /usr/local/bin/ws
-$ sudo ln -s $(pwd)/bin/context /usr/local/bin/context
-# PR for a proper installer scripts welcome!
+npm install -g canvas-cli
 ```
 
 ## Configuration
 
-Configuration is stored in the following locations:
+The CLI stores configuration in `~/.canvas/config/canvas-cli.json` (or `%USERPROFILE%\Canvas\config\canvas-cli.json` on Windows).
 
-- **Linux**: `$HOME/.canvas/config/canvas-cli.json`
-- **macOS**: `$HOME/.canvas/config/canvas-cli.json`
-- **Windows**: `%USERPROFILE%\Canvas\config\canvas-cli.json`
+### Initial Setup
 
-You can configure the server URL and authentication token using:
-
+1. Set the Canvas server URL:
 ```bash
 canvas config set server.url http://localhost:8001/rest/v2
-canvas config set auth.token your-auth-token
 ```
 
-## Authentication
-
-CLI client will automatically prompt for authentication if no token is found in the configuration. You can also explicitly authenticate using:
-
+2. Authenticate with the server:
 ```bash
-canvas login
+# Using username/password
+canvas auth login your-username --password your-password
+
+# Or set an API token directly
+canvas auth set-token canvas-your-token-here
 ```
 
-This will start a three-step authentication process:
-
-1. Login with your email and password to create a session
-2. Use the session to generate a long-lived API token
-3. Store the token in your configuration and logout the session
-
-API token will be used for all subsequent CLI commands.
-If you already have a token, you can set it directly:
-
+3. Verify connection:
 ```bash
-canvas login YOUR_TOKEN
+canvas auth status
 ```
-
-Or configure it using the config command:
-
-```bash
-canvas config set auth.token YOUR_TOKEN
-```
-
-### Troubleshooting Authentication
-
-If you encounter authentication issues:
-
-1. Ensure the server is running and accessible
-2. Check your credentials are correct
-3. Try running with debug enabled: `DEBUG=canvas:* ./bin/canvas login`
-4. If you have a token from another source, use it directly with `canvas login YOUR_TOKEN`
-
-## Supported modules
-
-- contexts
-- workspaces
-- documents
-
-## Supported data abstractions
-
-- files
-- notes
-- tabs
-
 
 ## Commands
 
-### Canvas
-
-The main CLI for managing the Canvas server, users, and roles.
-
-```bash
-# Show server status
-canvas server status
-
-# Start/stop/restart the server
-canvas server start
-canvas server stop
-canvas server restart
-
-# Authenticate with the Canvas server
-canvas login
-
-# Check server connection
-canvas ping
-
-# List all users
-canvas users
-
-# List all roles
-canvas roles
-
-# Show current configuration
-canvas config
-
-# Set configuration value
-canvas config set <key> <value>
-```
-
 ### Workspaces
-
-Manage user workspaces.
 
 ```bash
 # List all workspaces
-ws list
+canvas workspace list
 
 # Create a new workspace
-ws create <name> [--description <desc>] [--color <color>] [--type <type>]
+canvas workspace create "My Project" --description "Project workspace"
 
-# Get workspace details
-ws get <id>
+# Show workspace details
+canvas workspace show workspace-id
 
-# Update workspace properties
-ws update <id> [--name <name>] [--description <desc>] [--color <color>] [--type <type>]
+# Set current workspace
+canvas workspace use workspace-id
 
-# Open a workspace
-ws open <id>
+# Show current workspace
+canvas workspace current
 
-# Close a workspace
-ws close <id>
+# Update workspace
+canvas workspace update workspace-id --name "New Name"
 
-# Remove a workspace
-ws remove <id>
+# Delete workspace
+canvas workspace delete workspace-id --force
 ```
 
 ### Contexts
 
-Manage user contexts.
-
 ```bash
-# List all contexts
-context list
+# List contexts in current workspace
+canvas context list
 
-# Set the context URL
-context set <url>
+# Create a new context
+canvas context create /work/project --name "My Project"
 
-# Switch to a different context
-context switch <id>
+# Show context details
+canvas context show context-id
 
-# Show current context URL
-context url
+# Set current context
+canvas context use context-id
 
-# Show current context ID
-context id
+# Show current context
+canvas context current
 
-# Show current context path
-context path
+# Show context tree
+canvas context tree
 
-# Show context bitmaps
-context bitmaps
+# Update context
+canvas context update context-id --name "New Name"
 
-# List all documents in the context
-context documents [-f <feature>]
-
-# List all notes in the context
-context notes
-
-# Get a specific note
-context note get <id/hash>
-
-# Add a new note
-context note add <content> [--title <title>] [-t <tag>]
-
-# Add a new tab
-context tab add <url> [--title <title>] [--context <context>] [-t <tag>]
-
-# List all tabs in the context
-context tab list
+# Delete context
+canvas context delete context-id --force
 ```
 
-### Role management
+### Documents
+
+The CLI supports multiple document schemas: `note`, `file`, `todo`, `email`, `tab`.
 
 ```bash
-# List all roles
-canvas roles
+# List documents in current context
+canvas document list
 
-# Register a new role
-canvas roles register /path/to/role/config.json
+# List documents by schema
+canvas note list
+canvas todo list
+canvas file list
 
-# Returns role information
-canvas roles roleName 
+# Add documents
+canvas note add --title "Meeting Notes" < notes.txt
+canvas file add ./script.sh --title "Deploy Script"
+canvas todo add --title "Fix Bug" --priority high --due "2024-01-15"
+canvas email add --subject "Important" --from "user@example.com"
+canvas tab add --title "Documentation" --url "https://docs.example.com"
 
-# Returns the dockerfile for the role
-canvas roles roleName dockerfile 
+# Show document details
+canvas document show document-id
 
-# Returns the start command for the role
-canvas roles roleName start
+# Update document
+canvas document update document-id --title "New Title"
 
-# Role control commands
-canvas roles roleName stop
-canvas roles roleName restart
-canvas roles roleName status
+# Search documents
+canvas document search "keyword"
+
+# Delete document
+canvas document delete document-id --force
 ```
 
-## Piping Data
-
-You can pipe data to the CLI for various data abstractions(files, notes, tabs etc), assuming the parser can handle it :)
+### Authentication
 
 ```bash
-cat /var/log/syslog | grep -i err | grep nvidia | grep 202503 | context note add --title "nvidia errors"
-cat /var/log/syslog | grep -i err | grep nvidia | grep 202503 | context query "any idea what this error is about?"
-cat /var/log/syslog | grep -i err | grep nvidia | grep 202503 | context query "do we have any emails related to this?"
+# Login with username/password
+canvas auth login username --password password
+
+# Create API token
+canvas auth create-token "CLI Access" --save
+
+# Set API token manually
+canvas auth set-token canvas-your-token
+
+# Show authentication status
+canvas auth status
+
+# List API tokens
+canvas auth tokens
+
+# Delete API token
+canvas auth delete-token token-id --force
+
+# Logout
+canvas auth logout
 ```
+
+### Configuration
+
+```bash
+# Show all configuration
+canvas config show
+
+# Show specific configuration key
+canvas config get server.url
+
+# Set configuration value
+canvas config set server.url http://localhost:8001/rest/v2
+
+# List all configuration keys
+canvas config list
+
+# Edit configuration file
+canvas config edit
+
+# Validate configuration
+canvas config validate
+
+# Reset to defaults
+canvas config reset --force
+```
+
+## Global Options
+
+- `-h, --help` - Show help
+- `-v, --version` - Show version
+- `-c, --context` - Set context for command
+- `-w, --workspace` - Set workspace for command
+- `-f, --format` - Output format (table, json, csv)
+- `-r, --raw` - Raw JSON output
+- `-d, --debug` - Enable debug output
 
 ## Examples
 
-```bash
-# Create a new workspace
-ws create "My Workspace" --description "My personal workspace" --color "#ff5500"
-
-# Set the context URL to a specific workspace
-context set my-workspace://work/project1
-
-# Add a note with tags
-context note add "This is a note" --title "My Note" -t important -t work
-
-# Add a tab to a specific context
-context tab add https://example.com --title "Example Website" --context "/different/context/url"
-```
-
-## Legacy interface doc(tb cleaned-up)
-
-### Workspace tree management
+### Piping Data
 
 ```bash
-context # Returns the current context object
-context set /context/url
-context id
-context url
-context tree
-context tree move /path/1 /path/2 || context tree rename /path/1 2
-context tree remove /path/2
-context tree copy /path/1 /path/2 --recursive
-context tree delete /path/1 # Fails if layer is part of a different path unless --force is used
+# Add note from stdin
+cat meeting-notes.txt | canvas note add --title "Team Meeting $(date)"
+
+# Add file content
+canvas file add ./config.json --title "App Configuration"
+
+# Add log analysis
+grep ERROR /var/log/app.log | canvas note add --title "Error Analysis $(date)"
 ```
 
-### Context util functions
+### Working with Different Schemas
 
 ```bash
-context paths
-context bitmaps
-context layers
-context filters
+# Create a todo with due date
+canvas todo add --title "Review PR" --priority high --due "2024-01-20"
+
+# Add email record
+canvas email add --subject "Project Update" --from "manager@company.com" --to "team@company.com"
+
+# Save browser tab
+canvas tab add --title "API Documentation" --url "https://api.example.com/docs"
 ```
 
-### Data management within the context
+### Batch Operations
 
 ```bash
-context query "Natural language query with within the current context"
-context list # Legacy method to return all documents stored for the current context
-# Here we've taken data/abstraction/note as an example
-context notes # list of notes stored for the current context --filter foo --filter bar --today ..
-context notes query "Natural language query for your notes" --filter optionalFilter1 --filter f2
-context notes get id/1234 # Returns a JSON document
-context notes insert "Note content" --title "Note Title" || context notes ad
-context notes copy id/1234 /context/path
-context notes move id/1234 /context/path
-context notes remove id/1234
-context notes remove id/1234 /context/path
-context notes remove sha1/hash
-context notes delete id/1234
-context notes update id/1234 "Optional new body" --tag work --tag !personal --title "newtitle"
-context notes get id/1234 --tags # Returns the tags array
-context notes get id/1234 --checksums # Returns the checksums array
-context notes get id/1234 --versions # Returns the version IDs
-context notes get id/1234 --version latest
-context notes get id/1234 --version 3
-context notes get id/1234 --metadata # Returns the whole metadata array
+# List all todos in current context
+canvas todo list --format json | jq '.[] | select(.completed == false)'
+
+# Export all notes as CSV
+canvas note list --format csv > notes.csv
 ```
 
-### Data management (global)
+## Configuration Keys
+
+Common configuration keys:
+
+- `server.url` - Canvas server URL
+- `server.auth.token` - API token
+- `server.auth.type` - Auth type (token/jwt)
+- `session.workspace` - Current workspace
+- `session.context.id` - Current context
+- `connectors.ollama.host` - Ollama server URL
+- `connectors.ollama.model` - Default Ollama model
+
+## Environment Variables
+
+- `CANVAS_USER_HOME` - Override user home directory
+- `SERVER_MODE` - Set to 'server' for server mode
+- `SERVER_HOME` - Server home directory (when SERVER_MODE=server)
+- `DEBUG` - Enable debug logging (e.g., `DEBUG=canvas:*`)
+
+## Troubleshooting
+
+### Connection Issues
 
 ```bash
-canvas notes list --context /foo --filter bar --filter baz --
+# Check authentication status
+canvas auth status
+
+# Validate configuration
+canvas config validate
+
+# Test server connection
+canvas config get server.url
 ```
 
-**Happy interfacing**
+### Debug Mode
+
+```bash
+# Enable debug logging
+DEBUG=canvas:* canvas workspace list
+
+# Or use the debug flag
+canvas workspace list --debug
+```
+
+### Configuration Issues
+
+```bash
+# Show configuration file location
+canvas config path
+
+# Reset configuration
+canvas config reset --force
+
+# Edit configuration manually
+canvas config edit
+```
+
+## Development
+
+### Building
+
+```bash
+npm run build
+```
+
+### Testing
+
+```bash
+npm test
+```
+
+### Debugging
+
+```bash
+DEBUG=canvas:* npm start
+```

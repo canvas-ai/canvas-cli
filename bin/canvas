@@ -1,2 +1,5 @@
 #!/usr/bin/env node
 
+// Placeholder for now
+import('../src/index.js');
+
