@@ -14,6 +14,10 @@ export class ConfigCommand extends BaseCommand {
 
     async execute(parsed) {
         this.options = parsed.options;
+
+        // Collect client context for this execution
+        this.collectClientContext();
+
         // Skip connection check for config commands
         return this.handleAction(parsed);
     }
@@ -278,6 +282,33 @@ export class ConfigCommand extends BaseCommand {
     }
 
     /**
+     * Show client context (for debugging)
+     */
+    async handleContext(parsed) {
+        console.log(chalk.bold('Client Context Information:'));
+        console.log();
+
+        console.log(chalk.cyan('Full Context:'));
+        console.log(JSON.stringify(this.currentContext, null, 2));
+        console.log();
+
+        console.log(chalk.cyan('Feature Array:'));
+        this.featureArray.forEach((feature, index) => {
+            console.log(`  ${index + 1}. ${feature}`);
+        });
+        console.log();
+
+        console.log(chalk.cyan('LLM Context:'));
+        console.log(JSON.stringify(this.llmContext, null, 2));
+        console.log();
+
+        console.log(chalk.cyan('API Headers:'));
+        console.log(JSON.stringify(this.apiHeaders, null, 2));
+
+        return 0;
+    }
+
+    /**
      * Show help
      */
     showHelp() {
@@ -291,6 +322,7 @@ export class ConfigCommand extends BaseCommand {
         console.log('  edit                  Edit configuration file');
         console.log('  path                  Show configuration file path');
         console.log('  validate              Validate configuration');
+        console.log('  context               Show client context (debug)');
         console.log();
         console.log(chalk.bold('Options:'));
         console.log('  --raw                 Output raw JSON (for get command)');
@@ -304,6 +336,7 @@ export class ConfigCommand extends BaseCommand {
         console.log('  canvas config delete server.auth.token --force');
         console.log('  canvas config list');
         console.log('  canvas config validate');
+        console.log('  canvas config context');
         console.log();
         console.log(chalk.bold('Common Configuration Keys:'));
         console.log('  server.url                    Canvas server URL');

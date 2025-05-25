@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { CanvasApiClient } from '../utils/api-client.js';
 import { createFormatter } from '../utils/formatters.js';
 import { setupDebug } from '../utils/debug.js';
+import { clientContext } from '../utils/client-context.js';
 
 const debug = setupDebug('canvas:cli:command');
 
@@ -15,6 +16,7 @@ export class BaseCommand {
         this.config = config;
         this.apiClient = new CanvasApiClient(config);
         this.debug = debug;
+        this.clientContext = clientContext;
     }
 
     /**
@@ -25,6 +27,9 @@ export class BaseCommand {
     async execute(parsed) {
         try {
             this.debug('Executing command:', parsed.command, 'with args:', parsed.args);
+
+            // Collect client context for this execution
+            this.collectClientContext();
 
             // Check if server is reachable
             await this.checkConnection();
@@ -46,6 +51,42 @@ export class BaseCommand {
                 console.error(error.stack);
             }
             return 1;
+        }
+    }
+
+    /**
+     * Collect client context for this command execution
+     */
+    collectClientContext() {
+        try {
+            // Collect comprehensive context
+            this.currentContext = this.clientContext.collect();
+
+            // Generate feature array for API calls
+            this.featureArray = this.clientContext.generateFeatureArray();
+
+            // Generate LLM context for queries
+            this.llmContext = this.clientContext.generateLLMContext();
+
+            // Get API headers
+            this.apiHeaders = this.clientContext.getApiHeaders();
+
+            this.debug('Client context collected:', {
+                contextKeys: Object.keys(this.currentContext),
+                featureArrayLength: this.featureArray.length,
+                llmContextKeys: Object.keys(this.llmContext)
+            });
+
+            // Log feature array in debug mode
+            this.debug('Feature array:', this.featureArray);
+
+        } catch (error) {
+            this.debug('Failed to collect client context:', error.message);
+            // Set fallback values
+            this.currentContext = {};
+            this.featureArray = [];
+            this.llmContext = {};
+            this.apiHeaders = {};
         }
     }
 

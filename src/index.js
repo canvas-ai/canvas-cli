@@ -15,7 +15,6 @@ import { setupDebug } from './utils/debug.js';
 // Commands
 import WorkspaceCommand from './commands/workspace.js';
 import ContextCommand from './commands/context.js';
-import DocumentCommand from './commands/document.js';
 import AuthCommand from './commands/auth.js';
 import ConfigCommand from './commands/config.js';
 import ServerCommand from './commands/server.js';
@@ -34,13 +33,6 @@ const COMMANDS = {
   ws: WorkspaceCommand, // alias
   context: ContextCommand,
   ctx: ContextCommand, // alias
-  document: DocumentCommand,
-  doc: DocumentCommand, // alias
-  note: DocumentCommand, // alias for document with note schema
-  file: DocumentCommand, // alias for document with file schema
-  todo: DocumentCommand, // alias for document with todo schema
-  email: DocumentCommand, // alias for document with email schema
-  tab: DocumentCommand, // alias for document with tab schema
   auth: AuthCommand,
   config: ConfigCommand,
   server: ServerCommand,
@@ -113,11 +105,6 @@ export async function main(argv = process.argv.slice(2)) {
     const CommandClass = COMMANDS[command];
     const commandInstance = new CommandClass(config);
 
-    // Set schema based on command alias
-    if (['note', 'file', 'todo', 'email', 'tab'].includes(command)) {
-      parsed.options.schema = command;
-    }
-
     const exitCode = await commandInstance.execute(parsed);
     return exitCode;
 
@@ -156,12 +143,6 @@ function showHelp() {
   console.log(chalk.bold('Commands:'));
   console.log('  workspace, ws     Manage workspaces');
   console.log('  context, ctx      Manage contexts');
-  console.log('  document, doc     Manage documents');
-  console.log('  note              Add/manage notes (document with note schema)');
-  console.log('  file              Add/manage files (document with file schema)');
-  console.log('  todo              Add/manage todos (document with todo schema)');
-  console.log('  email             Add/manage emails (document with email schema)');
-  console.log('  tab               Add/manage tabs (document with tab schema)');
   console.log('  auth              Manage authentication');
   console.log('  config            Manage configuration');
   console.log('  server            Manage local Canvas server (PM2)');
@@ -181,9 +162,8 @@ function showHelp() {
   console.log('  canvas server start');
   console.log('  canvas workspace list');
   console.log('  canvas context create /work/project');
-  console.log('  canvas note add --title "Meeting notes" < notes.txt');
-  console.log('  canvas file add ./script.sh --title "Deploy script"');
-  console.log('  cat log.txt | canvas note add --title "Error logs"');
+  console.log('  canvas ws documents list');
+  console.log('  canvas ctx documents add --title "Meeting notes" < notes.txt');
   console.log();
 
   console.log(chalk.bold('Configuration:'));
