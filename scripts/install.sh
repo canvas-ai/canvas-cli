@@ -10,22 +10,18 @@ echo
 # Get the CLI directory (parent of scripts directory)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_DIR="$(dirname "$SCRIPT_DIR")"
-CANVAS_BINARY="$CLI_DIR/bin/canvas"
+BIN_DIR="$CLI_DIR/bin"
 
 # Check if we're in the right directory
-if [ ! -f "$CANVAS_BINARY" ]; then
-    echo "❌ Error: canvas binary not found at $CANVAS_BINARY"
-    echo "Please run this script from the Canvas CLI directory"
+if [ ! -d "$BIN_DIR" ]; then
+    echo "❌ Error: bin directory not found at $BIN_DIR"
+    echo "Please run this script from the Canvas CLI directory or its parent."
     exit 1
 fi
 
 echo "📁 CLI Directory: $CLI_DIR"
-echo "🔧 Binary: $CANVAS_BINARY"
+echo "📂 Bin Directory: $BIN_DIR"
 echo
-
-# Make binary executable
-echo "🔐 Making binary executable..."
-chmod +x "$CANVAS_BINARY"
 
 # Create ~/.local/bin if it doesn't exist
 LOCAL_BIN="$HOME/.local/bin"
@@ -34,25 +30,44 @@ if [ ! -d "$LOCAL_BIN" ]; then
     mkdir -p "$LOCAL_BIN"
 fi
 
-# Create symlink
-SYMLINK_TARGET="$LOCAL_BIN/canvas"
-echo "🔗 Creating symlink: $SYMLINK_TARGET -> $CANVAS_BINARY"
+echo "🔗 Creating symlinks for binaries in $BIN_DIR to $LOCAL_BIN..."
 
-if [ -L "$SYMLINK_TARGET" ]; then
-    echo "   Removing existing symlink..."
-    rm "$SYMLINK_TARGET"
-fi
+# Loop through all files in the bin directory
+for SCRIPT_PATH in "$BIN_DIR"/*; do
+    if [ -f "$SCRIPT_PATH" ]; then
+        SCRIPT_NAME=$(basename "$SCRIPT_PATH")
+        SYMLINK_TARGET="$LOCAL_BIN/$SCRIPT_NAME"
 
-ln -sf "$CANVAS_BINARY" "$SYMLINK_TARGET"
+        echo "   Processing $SCRIPT_NAME..."
+
+        # Make binary executable
+        echo "     🔐 Making $SCRIPT_NAME executable..."
+        chmod +x "$SCRIPT_PATH"
+
+        # Create symlink
+        echo "     🔗 Creating symlink: $SYMLINK_TARGET -> $SCRIPT_PATH"
+
+        if [ -L "$SYMLINK_TARGET" ] || [ -f "$SYMLINK_TARGET" ]; then
+            echo "        Removing existing file/symlink at $SYMLINK_TARGET..."
+            rm "$SYMLINK_TARGET"
+        fi
+
+        ln -sf "$SCRIPT_PATH" "$SYMLINK_TARGET"
+        echo "        ✅ Symlink created for $SCRIPT_NAME."
+    else
+        echo "   Skipping $SCRIPT_PATH (not a regular file)."
+    fi
+done
+
 
 # Check if ~/.local/bin is in PATH
 if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
     echo "⚠️  Warning: $LOCAL_BIN is not in your PATH"
     echo "   Add this line to your ~/.bashrc or ~/.zshrc:"
-    echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "   export PATH=\"$HOME/.local/bin:\$PATH\""
     echo
     echo "   Or run this command:"
-    echo "   echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.bashrc && source ~/.bashrc"
+    echo "   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc"
     echo
 else
     echo "✅ $LOCAL_BIN is already in your PATH"
@@ -70,9 +85,12 @@ fi
 echo
 echo "🎉 Installation complete!"
 echo
-echo "Test your installation:"
+echo "Test your installation by opening a new terminal or sourcing your shell config (e.g., source ~/.bashrc),"
+echo "then try commands like:"
 echo "  canvas --version"
-echo "  canvas --help"
+echo "  q --help"
+echo "  ws list"
+echo "  ctx tree"
 echo "  canvas server status"
 echo
 echo "Quick start:"
