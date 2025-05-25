@@ -46,7 +46,7 @@ const DEFAULT_CONFIG = {
     },
     session: {
         context: {
-            id: `canvas-cli.${MACHINE_ID}`,
+            id: 'default',
             clientArray: generateClientContextArray(),
         }
     },

@@ -1,6 +1,6 @@
 # Canvas CLI
 
-A command-line interface for managing Canvas workspaces, contexts, and documents.
+A command-line interface for managing Canvas workspaces, contexts, and documents with integrated AI assistance.
 
 ## Installation
 
@@ -14,11 +14,8 @@ A command-line interface for managing Canvas workspaces, contexts, and documents
 
 #### Manual Install
 ```bash
-# Make the binary executable
-chmod +x bin/canvas
-
 # Create symlink to your local bin directory
-ln -sf /home/idnc_sk/Code/Canvas/canvas-server/src/ui/cli/bin/canvas ~/.local/bin/canvas
+ln -sf ~/path/to/src/bin/canvas ~/.local/bin/canvas
 
 # Ensure ~/.local/bin is in your PATH
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
@@ -43,16 +40,10 @@ npm link
 # Show help
 canvas --help
 
-# List workspaces
-canvas workspace list
-canvas ws list
-
-# List contexts
-canvas context list
-canvas ctx list
-
-# Create a context
-canvas context create universe://work/project --name "My Project"
+# AI Assistant (context-aware)
+canvas q "How do I create a new context?"
+canvas q "Explain this error" --code
+cat error.log | canvas q "What does this error mean?"
 
 # Show current configuration
 canvas config show
@@ -95,6 +86,15 @@ canvas config set server.url http://localhost:8001/rest/v2
 - `canvas config set <key> <value>` - Set configuration value
 - `canvas config get <key>` - Get configuration value
 
+### AI Assistant
+- `canvas q "<query>"` - Ask the AI assistant (context-aware)
+- `canvas q status` - Show AI connector status
+- `canvas q templates` - List available prompt templates
+- `canvas q "<query>" --connector ollama` - Use specific AI connector
+- `canvas q "<query>" --code` - Use code assistant template
+- `canvas q "<query>" --show-prompt` - Display prompt before sending
+- `canvas q "<query>" --show-prompt-only` - Display prompt without AI call
+
 ### Server Management (Local)
 - `canvas server start` - Start Canvas server locally with PM2
 - `canvas server stop` - Stop Canvas server
@@ -102,11 +102,100 @@ canvas config set server.url http://localhost:8001/rest/v2
 - `canvas server status` - Show server status (local + remote)
 - `canvas server logs` - Show server logs
 
+## Shortcut Scripts
+
+For convenience, Canvas CLI provides direct command shortcuts. ln -s all of them into your ~/.local/bin => profit $$:
+
+```bash
+# Direct context commands
+context list              # Same as: canvas context list
+context create my-project # Same as: canvas context create my-project
+context current           # Same as: canvas context current
+
+# Direct workspace commands  
+ws list                   # Same as: canvas workspace list
+ws create test            # Same as: canvas workspace create test
+
+# Direct AI queries
+q "What is Canvas?"       # Same as: canvas q "What is Canvas?"
+q status                  # Same as: canvas q status
+echo "data" | q "analyze" # Same as: echo "data" | canvas q "analyze"
+```
+
+All options, flags, and subcommands work with the shortcuts.
+
 ## Architecture
 
-- **Workspaces**: Isolated LMDB databases, each user has "universe" as home
-- **Contexts**: Views/filters on top of workspaces with `workspace://path` URLs
-- **Documents**: Can be accessed via both contexts and workspaces
+See [canvas-ai](https://github.com/canvas-ai)
+
+## AI Assistant
+
+Canvas CLI includes an integrated AI assistant that is context-aware and supports multiple AI providers.
+
+### Supported AI Connectors
+
+- **Anthropic Claude** - Premium AI with excellent reasoning capabilities
+- **OpenAI GPT** - Popular AI models including GPT-4
+- **Ollama** - Local AI models for privacy and offline use
+
+### Configuration
+
+Set up AI connectors using environment variables:
+
+```bash
+# Anthropic (recommended)
+export ANTHROPIC_API_KEY="your-anthropic-key"
+
+# OpenAI
+export OPENAI_API_KEY="your-openai-key"
+
+# Ollama (configure host if not default)
+canvas config set connectors.ollama.host http://localhost:11434
+```
+
+### Usage Examples
+
+```bash
+# Basic queries
+canvas q "How do I create a new context?"
+canvas q "What's the difference between workspaces and contexts?"
+
+# Code assistance
+canvas q "How do I optimize this function?" --code
+echo "function test() { return null; }" | canvas q "Review this code"
+
+# Data analysis
+cat /var/log/syslog | canvas q "Are there any errors in these logs?"
+ps aux | canvas q "Are there any suspicious processes?"
+
+# Connector selection
+canvas q "Explain Canvas architecture" --connector ollama
+canvas q "Debug this error" --connector anthropic
+
+# Debug and development
+canvas q "Test query" --show-prompt-only
+canvas q "Test query" --show-prompt
+canvas q status
+canvas q templates
+```
+
+### Prompt Templates
+
+- **canvas-assistant**: General Canvas CLI assistance (default)
+- **data-analysis**: Specialized for analyzing piped data
+- **code-assistant**: Expert software engineering assistance
+
+### AI Options
+
+- `--connector <name>` - Use specific AI connector (anthropic, openai, ollama)
+- `--model <name>` - Use specific model
+- `--template <name>` - Use specific prompt template
+- `--max-tokens <num>` - Maximum tokens for response
+- `--code` - Use code assistant template
+- `--raw` - Output raw JSON response
+- `--quiet` - Suppress status messages
+- `--show-prompt` - Display the rendered prompt before sending
+- `--show-prompt-only` - Display the rendered prompt and exit (no AI call)
 
 ## Server Management
 
@@ -182,9 +271,33 @@ Configuration is stored in `~/.canvas/config/canvas-cli.json`:
   },
   "session": {
     "context": {
-      "id": "canvas-cli.machine-id",
+      "id": "default",
       "clientArray": ["client/app/canvas-cli", "..."]
     }
+  },
+  "connectors": {
+    "anthropic": {
+      "driver": "anthropic",
+      "apiKey": "",
+      "model": "claude-3-5-sonnet-20241022",
+      "maxTokens": 4096
+    },
+    "openai": {
+      "driver": "openai", 
+      "apiKey": "",
+      "model": "gpt-4o",
+      "maxTokens": 4096
+    },
+    "ollama": {
+      "driver": "ollama",
+      "host": "http://localhost:11434",
+      "model": "qwen2.5-coder:latest"
+    }
+  },
+  "ai": {
+    "defaultConnector": "anthropic",
+    "priority": ["anthropic", "openai", "ollama"],
+    "contextTemplate": "canvas-assistant"
   }
 }
 ```
@@ -192,17 +305,16 @@ Configuration is stored in `~/.canvas/config/canvas-cli.json`:
 ## Examples
 
 ```bash
-# Start local Canvas server
-canvas server start
-
-# Check server status
-canvas server status
-
 # List all workspaces
 canvas ws list
 
-# Create a new context
+# Create a new context with a specific name
 canvas ctx create work://project/feature-123 --name "Feature 123"
+
+# Using shortcuts for common commands
+q "Quick question about Canvas"
+context list
+ws create test-workspace
 
 # Add a note from stdin
 echo "Meeting notes from today" | canvas note add --title "Daily Standup"
@@ -210,14 +322,11 @@ echo "Meeting notes from today" | canvas note add --title "Daily Standup"
 # Add a file
 canvas file add ./deploy.sh --title "Deployment Script"
 
-# List contexts in universe workspace
+# List contexts in a specific workspace
 canvas ctx list --workspace universe
 
-# Show context tree
+# Show context tree for a specific workspace
 canvas ctx tree --workspace universe
-
-# View server logs
-canvas server logs --lines 100
 ```
 
 ## Global Options
@@ -229,25 +338,6 @@ canvas server logs --lines 100
 - `-f, --format` - Output format (table, json, csv)
 - `-r, --raw` - Raw JSON output
 - `-d, --debug` - Enable debug output
-
-## Configuration Keys
-
-Common configuration keys:
-
-- `server.url` - Canvas server URL
-- `server.auth.token` - API token
-- `server.auth.type` - Auth type (token/jwt)
-- `session.workspace` - Current workspace
-- `session.context.id` - Current context
-- `connectors.ollama.host` - Ollama server URL
-- `connectors.ollama.model` - Default Ollama model
-
-## Environment Variables
-
-- `CANVAS_USER_HOME` - Override user home directory
-- `SERVER_MODE` - Set to 'server' for server mode
-- `SERVER_HOME` - Server home directory (when SERVER_MODE=server)
-- `DEBUG` - Enable debug logging (e.g., `DEBUG=canvas:*`)
 
 ## Troubleshooting
 
@@ -287,22 +377,23 @@ canvas config reset --force
 canvas config edit
 ```
 
-## Development
-
-### Building
+### AI Issues
 
 ```bash
-npm run build
-```
+# Check AI connector status
+canvas q status
 
-### Testing
+# Test AI connectivity
+canvas q "test" --show-prompt-only
 
-```bash
-npm test
-```
+# Debug prompt rendering
+canvas q "test query" --show-prompt
 
-### Debugging
+# Check API keys
+echo $ANTHROPIC_API_KEY
+echo $OPENAI_API_KEY
 
-```bash
-DEBUG=canvas:* npm start
+# Test specific connector
+canvas q "test" --connector anthropic
+canvas q "test" --connector ollama
 ```
