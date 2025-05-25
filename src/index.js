@@ -49,7 +49,7 @@ export async function main(argv = process.argv.slice(2)) {
   try {
     const args = minimist(argv, {
       string: ['context', 'workspace', 'format', 'title', 'tag', 'schema', 'connector', 'model', 'template', 'max-tokens'],
-      boolean: ['help', 'version', 'raw', 'verbose', 'debug', 'code', 'quiet'],
+      boolean: ['help', 'version', 'raw', 'verbose', 'debug', 'code', 'quiet', 'show-prompt', 'show-prompt-only'],
       alias: {
         h: 'help',
         v: 'version',

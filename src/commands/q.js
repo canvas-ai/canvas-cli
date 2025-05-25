@@ -105,9 +105,23 @@ export class QCommand extends BaseCommand {
         this.debug('Generated prompt length:', prompt.length);
         this.debug('Using template:', templateName);
 
+                // Show prompt if requested
+        if (this.options['show-prompt'] || this.options['show-prompt-only']) {
+            console.log(chalk.bold.yellow('📝 Rendered Prompt:'));
+            console.log(chalk.gray('─'.repeat(80)));
+            console.log(prompt);
+            console.log(chalk.gray('─'.repeat(80)));
+            console.log();
+
+            // If only showing prompt, exit here
+            if (this.options['show-prompt-only']) {
+                return 0;
+            }
+        }
+
         try {
             // Show thinking indicator
-            if (!this.options.quiet) {
+            if (!this.options.quiet && !this.options['show-prompt']) {
                 process.stderr.write(chalk.gray('🤔 Thinking...'));
             }
 
@@ -241,6 +255,8 @@ export class QCommand extends BaseCommand {
         console.log('  --code                Use code assistant template');
         console.log('  --raw                 Output raw JSON response');
         console.log('  --quiet               Suppress status messages');
+        console.log('  --show-prompt         Display the rendered prompt before sending');
+        console.log('  --show-prompt-only    Display the rendered prompt and exit (no AI call)');
         console.log();
         console.log(chalk.bold('Examples:'));
         console.log('  canvas q "How do I create a new context?"');
@@ -250,6 +266,11 @@ export class QCommand extends BaseCommand {
         console.log('  ps aux | canvas q "Are there any suspicious processes?"');
         console.log('  canvas q status');
         console.log('  canvas q templates');
+        console.log();
+        console.log(chalk.bold('Debug Examples:'));
+        console.log('  canvas q "Test query" --show-prompt');
+        console.log('  canvas q "Test query" --show-prompt-only');
+        console.log('  cat data.txt | canvas q --show-prompt-only');
         console.log();
         console.log(chalk.bold('Configuration:'));
         console.log('  Set API keys via environment variables:');
