@@ -67,7 +67,7 @@ export async function main(argv = process.argv.slice(2)) {
     // Handle debug flag
     if (args.debug || args.verbose) {
       process.env.DEBUG = 'canvas:*';
-      setupDebug('canvas:*');
+      setupDebug('canvas:*'); // Re-initialize debug with the new setting
     }
 
     debug('CLI args:', args);
@@ -78,38 +78,56 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
-    // Handle help
+    const commandNameFromArgs = args._[0];
+
+    // Case 1: A specific command is invoked with --help
+    if (commandNameFromArgs && COMMANDS[commandNameFromArgs] && args.help) {
+      const CommandClass = COMMANDS[commandNameFromArgs];
+      const commandInstance = new CommandClass(config);
+      if (typeof commandInstance.showHelp === 'function') {
+        commandInstance.showHelp();
+      } else {
+        // Fallback if command has no specific help
+        console.log(chalk.yellow(`No specific help defined for command '${commandNameFromArgs}'. Showing general help.`));
+        showHelp();
+      }
+      return 0;
+    }
+
+    // Case 2: A specific command is invoked (not for --help, that's handled above)
+    // This also covers 'canvas <command> help' (where 'help' is an argument handled by the command's execute method)
+    if (commandNameFromArgs && COMMANDS[commandNameFromArgs]) {
+      const CommandClass = COMMANDS[commandNameFromArgs];
+      const commandInstance = new CommandClass(config);
+
+      const parsedInput = parseInput(args); // parseInput needs full args for context
+      let stdinData = null;
+      if (!process.stdin.isTTY) {
+        stdinData = await readStdin();
+        parsedInput.data = stdinData; // Attach stdin data to the object passed to execute
+      }
+
+      const exitCode = await commandInstance.execute(parsedInput);
+      return exitCode;
+    }
+
+    // Case 3: General help (--help with no command, or no command at all)
     if (args.help || args._.length === 0) {
       showHelp();
       return 0;
     }
 
-    // Parse input
-    const parsed = parseInput(args);
-    const command = parsed.command;
-
-    debug('Parsed command:', command);
-    debug('Parsed args:', parsed);
-
-    // Handle stdin data
-    let stdinData = null;
-    if (!process.stdin.isTTY) {
-      stdinData = await readStdin();
-      parsed.data = stdinData;
-    }
-
-    // Route to appropriate command handler
-    if (!COMMANDS[command]) {
-      console.error(chalk.red(`Unknown command: ${command}`));
-      console.error(chalk.yellow('Run "canvas help" for available commands'));
+    // Case 4: Unknown command
+    if (commandNameFromArgs && !COMMANDS[commandNameFromArgs]) {
+      console.error(chalk.red(`Unknown command: ${commandNameFromArgs}`));
+      console.error(chalk.yellow(`Run "canvas --help" for available commands.`));
       return 1;
     }
 
-    const CommandClass = COMMANDS[command];
-    const commandInstance = new CommandClass(config);
-
-    const exitCode = await commandInstance.execute(parsed);
-    return exitCode;
+    // Fallback: Should ideally be caught by args._.length === 0 if no command
+    // or if a non-command argument is passed without a valid command.
+    showHelp();
+    return 0;
 
   } catch (error) {
     console.error(chalk.red('Error:'), error.message);
@@ -166,7 +184,7 @@ function showHelp() {
   console.log('  canvas server start');
   console.log('  canvas workspace list');
   console.log('  canvas context create my-project');
-  console.log('  canvas context switch my-project');
+  console.log('  canvas context use my-project'); // Changed 'switch' to 'use' to match README
   console.log('  canvas ws documents list');
   console.log('  canvas ctx documents add --title "Meeting notes" < notes.txt');
   console.log('  canvas q "How do I create a new context?"');
