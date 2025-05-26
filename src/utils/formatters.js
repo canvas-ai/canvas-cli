@@ -98,9 +98,15 @@ class BaseFormatter {
 export class WorkspaceFormatter extends BaseFormatter {
     formatTable(data) {
         if (!Array.isArray(data)) {
-            data = [data];
+            // Single workspace - show detailed vertical table
+            return this.formatDetailedTable(data);
         }
 
+        // Multiple workspaces - show list table
+        return this.formatListTable(data);
+    }
+
+    formatListTable(data) {
         if (data.length === 0 || !data[0]) {
             return chalk.yellow('No workspaces found');
         }
@@ -127,12 +133,80 @@ export class WorkspaceFormatter extends BaseFormatter {
                     this.formatColor(workspace.color),
                     this.truncate(workspace.description, 25),
                     this.formatDate(workspace.created || workspace.createdAt),
-                    workspace.status ? chalk.green(workspace.status) : 'N/A'
+                    this.formatWorkspaceStatus(workspace.status)
                 ]);
             }
         });
 
         return table.toString();
+    }
+
+    formatDetailedTable(workspace) {
+        if (!workspace) {
+            return chalk.yellow('No workspace data found');
+        }
+
+        const table = new Table({
+            style: { head: [], border: [] }
+        });
+
+        // Basic information
+        table.push([chalk.cyan('ID'), workspace.id || 'N/A']);
+        table.push([chalk.cyan('Owner'), workspace.owner || 'N/A']);
+        table.push([chalk.cyan('Type'), workspace.type || 'N/A']);
+        table.push([chalk.cyan('Label'), workspace.label || 'N/A']);
+        table.push([chalk.cyan('Color'), this.formatColor(workspace.color)]);
+        table.push([chalk.cyan('Description'), workspace.description || 'N/A']);
+
+        // ACL - JSON stringify for safety
+        if (workspace.acl) {
+            table.push([chalk.cyan('ACL'), JSON.stringify(workspace.acl, null, 2)]);
+        }
+
+        // Timestamps
+        table.push([chalk.cyan('Created'), this.formatDate(workspace.created)]);
+        table.push([chalk.cyan('Updated'), this.formatDate(workspace.updated)]);
+
+        // Metadata - JSON stringify
+        if (workspace.metadata) {
+            table.push([chalk.cyan('Metadata'), JSON.stringify(workspace.metadata, null, 2)]);
+        }
+
+        // Paths
+        if (workspace.rootPath) {
+            table.push([chalk.cyan('Root Path'), workspace.rootPath]);
+        }
+
+        if (workspace.configPath) {
+            table.push([chalk.cyan('Config Path'), workspace.configPath]);
+        }
+
+        // Status with color
+        table.push([chalk.cyan('Status'), this.formatWorkspaceStatus(workspace.status)]);
+
+        return table.toString();
+    }
+
+    formatWorkspaceStatus(status) {
+
+        const statusColors = {
+            active: chalk.green,
+            inactive: chalk.yellow,
+            error: chalk.red,
+            available: chalk.blue,
+            not_found: chalk.red,
+            removed: chalk.red,
+            destroyed: chalk.red,
+        }
+
+        if (!status) return 'N/A';
+
+        if (statusColors[status]) {
+            return statusColors[status](status);
+        }
+
+
+        return status;
     }
 
         /**
@@ -180,42 +254,175 @@ export class WorkspaceFormatter extends BaseFormatter {
 export class ContextFormatter extends BaseFormatter {
     formatTable(data) {
         if (!Array.isArray(data)) {
-            data = [data];
+            // Single context - show detailed vertical table
+            return this.formatDetailedTable(data);
+        }
+
+        // Multiple contexts - show list table
+        return this.formatListTable(data);
+    }
+
+    formatListTable(data) {
+        if (data.length === 0 || !data[0]) {
+            return chalk.yellow('No contexts found');
         }
 
         const table = new Table({
             head: [
                 chalk.cyan('ID'),
-                chalk.cyan('Workspace'),
                 chalk.cyan('URL'),
-                chalk.cyan('Documents'),
-                chalk.cyan('Created')
+                chalk.cyan('BaseUrl'),
+                chalk.cyan('Owner'),
+                chalk.cyan('Locked')
             ],
             style: { head: [], border: [] }
         });
 
         data.forEach(context => {
-            let workspace = 'N/A';
-            let url = context.url || 'N/A';
-
-            // Extract workspace from URL or use workspaceId
-            if (context.url && context.url.includes('://')) {
-                workspace = context.url.split('://')[0];
-            } else if (context.workspaceId) {
-                workspace = context.workspaceId;
-            }
+            const owner = context.userId || 'N/A';
+            const locked = context.locked ? chalk.red('Yes') : chalk.green('No');
+            const contextId = this.formatContextId(context.id, context.color);
 
             table.push([
-                context.id || 'N/A',
-                workspace,
-                this.truncate(url, 40),
-                context.documentCount || '0',
-                this.formatDate(context.created || context.createdAt)
+                contextId,
+                this.truncate(context.url || 'N/A', 35),
+                context.baseUrl || 'N/A',
+                this.truncate(owner, 20),
+                locked
             ]);
         });
 
         return table.toString();
     }
+
+    formatDetailedTable(context) {
+        if (!context) {
+            return chalk.yellow('No context data found');
+        }
+
+        const table = new Table({
+            style: { head: [], border: [] }
+        });
+
+        // Basic information
+        table.push([chalk.cyan('ID'), context.id || 'N/A']);
+        table.push([chalk.cyan('User ID'), context.userId || 'N/A']);
+        table.push([chalk.cyan('URL'), context.url || 'N/A']);
+        table.push([chalk.cyan('Base URL'), context.baseUrl || 'N/A']);
+        table.push([chalk.cyan('Path'), context.path || 'N/A']);
+        table.push([chalk.cyan('Workspace ID'), context.workspaceId || 'N/A']);
+
+        // Timestamps
+        table.push([chalk.cyan('Created'), this.formatDate(context.createdAt)]);
+        table.push([chalk.cyan('Updated'), this.formatDate(context.updatedAt)]);
+
+        // Status
+        const locked = context.locked ? chalk.red('Yes') : chalk.green('No');
+        table.push([chalk.cyan('Locked'), locked]);
+
+        const shared = context.isShared ? chalk.green('Yes') : chalk.red('No');
+        table.push([chalk.cyan('Shared'), shared]);
+
+        if (context.sharedVia) {
+            table.push([chalk.cyan('Shared Via'), context.sharedVia]);
+        }
+
+        // Arrays
+        if (context.pathArray && Array.isArray(context.pathArray)) {
+            table.push([chalk.cyan('Path Array'), this.formatArrayVertical(context.pathArray)]);
+        }
+
+        if (context.serverContextArray && Array.isArray(context.serverContextArray)) {
+            table.push([chalk.cyan('Server Context Array'), this.formatArrayVertical(context.serverContextArray)]);
+        }
+
+        if (context.clientContextArray && Array.isArray(context.clientContextArray)) {
+            table.push([chalk.cyan('Client Context Array'), this.formatArrayVertical(context.clientContextArray)]);
+        }
+
+        if (context.contextBitmapArray && Array.isArray(context.contextBitmapArray)) {
+            table.push([chalk.cyan('Context Bitmap Array'), this.formatArrayVertical(context.contextBitmapArray)]);
+        }
+
+        if (context.featureBitmapArray && Array.isArray(context.featureBitmapArray)) {
+            table.push([chalk.cyan('Feature Bitmap Array'), this.formatArrayVertical(context.featureBitmapArray)]);
+        }
+
+        if (context.filterArray && Array.isArray(context.filterArray)) {
+            table.push([chalk.cyan('Filter Array'), this.formatArrayVertical(context.filterArray)]);
+        }
+
+        // ACL
+        if (context.acl && Object.keys(context.acl).length > 0) {
+            const aclEntries = Object.entries(context.acl).map(([user, permission]) => `${user}: ${permission}`);
+            table.push([chalk.cyan('ACL'), aclEntries.join('\n')]);
+        }
+
+        // Pending URL
+        if (context.pendingUrl) {
+            table.push([chalk.cyan('Pending URL'), context.pendingUrl]);
+        }
+
+                return table.toString();
+    }
+
+    /**
+     * Format context ID with color styling
+     */
+    formatContextId(contextId, colorValue) {
+        if (!contextId) return 'N/A';
+        if (!colorValue) return contextId;
+
+        // Use the same color formatting logic as workspace formatter
+        try {
+            // Remove # if present and validate hex format
+            const hex = colorValue.replace('#', '');
+
+            // Validate hex format (should be 6 characters)
+            if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+                return contextId; // Return uncolored if invalid format
+            }
+
+            // Convert hex to RGB
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+
+            // For very light colors (like white), add a background to make them visible
+            if (r > 240 && g > 240 && b > 240) {
+                // Light color - use dark background
+                return chalk.rgb(r, g, b).bgGray(contextId);
+            } else if (r < 50 && g < 50 && b < 50) {
+                // Very dark color - use light background
+                return chalk.rgb(r, g, b).bgWhite(contextId);
+            } else {
+                // Normal color - just color the text
+                return chalk.rgb(r, g, b)(contextId);
+            }
+        } catch (error) {
+            // Fallback to uncolored text if color parsing fails
+            return contextId;
+        }
+    }
+
+    /**
+     * Format array elements vertically for better readability
+     */
+    formatArrayVertical(array) {
+        if (!Array.isArray(array) || array.length === 0) {
+            return 'N/A';
+        }
+
+        // For single item, just return it
+        if (array.length === 1) {
+            return String(array[0]);
+        }
+
+        // For multiple items, format vertically
+        return array.map(item => String(item)).join('\n');
+    }
+
+
 }
 
 /**
