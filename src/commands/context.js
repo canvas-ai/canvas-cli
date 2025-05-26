@@ -101,26 +101,21 @@ export class ContextCommand extends BaseCommand {
         }
 
         const url = parsed.args[2];
-        let finalUrl;
-
-        if (url) {
-            // If URL contains ://, use as-is, otherwise assume universe workspace
-            if (url.includes('://')) {
-                finalUrl = url;
-            } else {
-                finalUrl = `universe://${url.startsWith('/') ? url : '/' + url}`;
-            }
-        } else {
-            // Default URL based on context ID
-            finalUrl = `universe:///${contextId}`;
-        }
-
         const contextData = {
             id: contextId,
-            url: finalUrl,
             description: parsed.options.description || '',
             metadata: {}
         };
+
+        // Only include URL if provided
+        if (url) {
+            // If URL contains ://, use as-is, otherwise assume universe workspace
+            if (url.includes('://')) {
+                contextData.url = url;
+            } else {
+                contextData.url = `universe://${url.startsWith('/') ? url : '/' + url}`;
+            }
+        }
 
         if (parsed.options.color) {
             contextData.metadata.color = parsed.options.color;
