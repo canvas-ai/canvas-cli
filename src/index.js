@@ -184,9 +184,12 @@ function showHelp() {
   console.log('  canvas server start');
   console.log('  canvas workspace list');
   console.log('  canvas context create my-project');
-  console.log('  canvas context use my-project'); // Changed 'switch' to 'use' to match README
-  console.log('  canvas ws documents list');
-  console.log('  canvas ctx documents add --title "Meeting notes" < notes.txt');
+  console.log('  canvas context switch my-project');
+  console.log('  canvas context documents');
+  console.log('  canvas context tabs');
+  console.log('  canvas context tab add https://example.com --title "Example Site"');
+  console.log('  canvas workspace documents universe');
+  console.log('  canvas workspace tabs universe');
   console.log('  canvas q "How do I create a new context?"');
   console.log('  cat error.log | canvas q "What does this error mean?"');
   console.log();

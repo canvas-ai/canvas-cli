@@ -157,6 +157,9 @@ export class CanvasApiClient {
     // Document API methods
     async getDocuments(containerId, containerType = 'context', options = {}) {
         const params = new URLSearchParams();
+        if (options.featureArray && Array.isArray(options.featureArray)) {
+            options.featureArray.forEach(feature => params.append('featureArray', feature));
+        }
         if (options.schema) params.append('schema', options.schema);
         if (options.limit) params.append('limit', options.limit);
         if (options.offset) params.append('offset', options.offset);
@@ -173,9 +176,13 @@ export class CanvasApiClient {
         return response.data;
     }
 
-    async createDocument(containerId, documentData, containerType = 'context') {
+    async createDocument(containerId, documentData, containerType = 'context', featureArray = []) {
         const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
-        const response = await this.client.post(`${baseUrl}/documents`, documentData);
+        const payload = {
+            documents: documentData,
+            featureArray: featureArray
+        };
+        const response = await this.client.post(`${baseUrl}/documents`, payload);
         return response.data;
     }
 

@@ -290,28 +290,26 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
-     * Show context tree structure for current context workspace
+     * Show context tree
      */
     async handleTree(parsed) {
         const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getContextTree(contextId);
-            const tree = response.payload || response.data || response;
+            let tree = response.payload || response.data || response;
 
-            if (parsed.options.raw) {
-                console.log(JSON.stringify(tree, null, 2));
+            if (!tree || !tree.children) {
+                console.log(chalk.yellow('No tree structure found for this context'));
                 return 0;
             }
 
-            console.log(chalk.bold('Context tree:'));
+            console.log(chalk.bold(`Context Tree: ${contextId}`));
             console.log();
-
-            this.displayTreeNode(tree, '', true);
-
+            this.displayTreeNode(tree);
             return 0;
         } catch (error) {
-            throw new Error(`Failed to show context tree: ${error.message}`);
+            throw new Error(`Failed to get context tree: ${error.message}`);
         }
     }
 
@@ -428,6 +426,137 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
+     * List all documents in context
+     */
+    async handleDocuments(parsed) {
+        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+
+        try {
+            const response = await this.apiClient.getDocuments(contextId, 'context');
+            let documents = response.payload || response.data || response;
+
+            if (Array.isArray(documents) && documents.length === 0) {
+                console.log(chalk.yellow('No documents found in this context'));
+                return 0;
+            }
+
+            this.output(documents, 'document');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to list documents: ${error.message}`);
+        }
+    }
+
+    /**
+     * Handle tab commands (list, add)
+     */
+    async handleTab(parsed) {
+        const action = parsed.args[1] || 'list';
+
+        if (action === 'list') {
+            return this.handleTabList(parsed);
+        } else if (action === 'add') {
+            return this.handleTabAdd(parsed);
+        } else {
+            console.error(chalk.red(`Unknown tab action: ${action}`));
+            console.log(chalk.yellow('Available actions: list, add'));
+            return 1;
+        }
+    }
+
+    /**
+     * Handle tabs command (alias for tab list)
+     */
+    async handleTabs(parsed) {
+        return this.handleTabList(parsed);
+    }
+
+    /**
+     * List tabs in context
+     */
+    async handleTabList(parsed) {
+        const contextId = this.getCurrentContext(parsed.options);
+
+        try {
+            const options = {
+                featureArray: ['data/abstraction/tab']
+            };
+            const response = await this.apiClient.getDocuments(contextId, 'context', options);
+            let tabs = response.payload || response.data || response;
+
+            if (Array.isArray(tabs) && tabs.length === 0) {
+                console.log(chalk.yellow('No tabs found in this context'));
+                return 0;
+            }
+
+            this.output(tabs, 'document', 'tab');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to list tabs: ${error.message}`);
+        }
+    }
+
+    /**
+     * Add a tab to context
+     */
+    async handleTabAdd(parsed) {
+        const url = parsed.args[2];
+        if (!url) {
+            throw new Error('URL is required for adding a tab');
+        }
+
+        const contextId = this.getCurrentContext(parsed.options);
+        const title = parsed.options.title || url;
+
+        const tabDocument = {
+            schema: 'data/abstraction/tab',
+            data: {
+                url: url,
+                title: title,
+                timestamp: new Date().toISOString()
+            }
+        };
+
+        try {
+            const featureArray = ['data/abstraction/tab'];
+            const response = await this.apiClient.createDocument(contextId, tabDocument, 'context', featureArray);
+            let result = response.payload || response.data || response;
+
+            console.log(chalk.green(`✓ Tab added successfully`));
+            this.output(result, 'document', 'tab');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to add tab: ${error.message}`);
+        }
+    }
+
+    /**
+     * Remove document from context
+     */
+    async handleRemove(parsed) {
+        const documentId = parsed.args[1];
+        if (!documentId) {
+            throw new Error('Document ID is required');
+        }
+
+        const contextId = this.getCurrentContext(parsed.options);
+
+        if (!parsed.options.force) {
+            console.log(chalk.yellow(`Warning: This will permanently delete document '${documentId}' from context '${contextId}'.`));
+            console.log(chalk.yellow('Use --force to confirm deletion.'));
+            return 1;
+        }
+
+        try {
+            await this.apiClient.deleteDocument(contextId, documentId, 'context');
+            console.log(chalk.green(`✓ Document '${documentId}' removed successfully`));
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to remove document: ${error.message}`);
+        }
+    }
+
+    /**
      * Show help
      */
     showHelp() {
@@ -448,10 +577,18 @@ export class ContextCommand extends BaseCommand {
         console.log('  current               Show current context');
         console.log('  update <id>           Update context');
         console.log();
+        console.log(chalk.bold('Document Commands:'));
+        console.log('  documents [id]        List all documents in context');
+        console.log('  tab list              List tabs in context');
+        console.log('  tabs                  List tabs in context (alias)');
+        console.log('  tab add <url>         Add a tab to context');
+        console.log('  remove <doc-id>       Remove document from context');
+        console.log();
         console.log(chalk.bold('Options:'));
         console.log('  --description <desc>  Context description');
         console.log('  --color <value>       Context color');
         console.log('  --metadata <json>     Context metadata (JSON string)');
+        console.log('  --title <title>       Title for documents (e.g., tabs)');
         console.log('  --force               Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
@@ -464,6 +601,12 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context url');
         console.log('  canvas context tree');
         console.log('  canvas context destroy old-project --force');
+        console.log();
+        console.log(chalk.bold('Document Examples:'));
+        console.log('  canvas context documents');
+        console.log('  canvas context tabs');
+        console.log('  canvas context tab add https://example.com --title "Example Site"');
+        console.log('  canvas context remove 12345 --force');
         console.log();
         console.log(chalk.cyan('Architecture:'));
         console.log('  • Contexts are views/filters on top of workspaces');

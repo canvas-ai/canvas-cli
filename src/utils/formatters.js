@@ -442,11 +442,17 @@ export class DocumentFormatter extends BaseFormatter {
         });
 
         data.forEach(doc => {
+            // Handle nested data structure - note data is under doc.data
+            const noteData = doc.data || {};
+            const title = noteData.title || 'N/A';
+            const content = noteData.content || 'N/A';
+            const tags = noteData.tags || [];
+
             table.push([
                 doc.id || 'N/A',
-                this.truncate(doc.title, 20),
-                this.truncate(doc.content, 40),
-                Array.isArray(doc.tags) ? doc.tags.join(', ') : (doc.tags || ''),
+                this.truncate(title, 20),
+                this.truncate(content, 40),
+                Array.isArray(tags) ? tags.join(', ') : (tags || ''),
                 this.formatDate(doc.createdAt)
             ]);
         });
@@ -495,15 +501,22 @@ export class DocumentFormatter extends BaseFormatter {
         });
 
         data.forEach(doc => {
-            const status = doc.completed ? chalk.green('✓ Done') : chalk.yellow('○ Pending');
-            const priority = doc.priority ? this.formatPriority(doc.priority) : 'N/A';
+            // Handle nested data structure - todo data is under doc.data
+            const todoData = doc.data || {};
+            const title = todoData.title || 'N/A';
+            const completed = todoData.completed || false;
+            const priority = todoData.priority;
+            const dueDate = todoData.dueDate;
+
+            const status = completed ? chalk.green('✓ Done') : chalk.yellow('○ Pending');
+            const priorityFormatted = priority ? this.formatPriority(priority) : 'N/A';
 
             table.push([
                 doc.id || 'N/A',
-                this.truncate(doc.title, 25),
+                this.truncate(title, 25),
                 status,
-                priority,
-                this.formatDate(doc.dueDate),
+                priorityFormatted,
+                this.formatDate(dueDate),
                 this.formatDate(doc.createdAt)
             ]);
         });
@@ -551,11 +564,26 @@ export class DocumentFormatter extends BaseFormatter {
         });
 
         data.forEach(doc => {
+            // Handle nested data structure - tab data is under doc.data
+            const tabData = doc.data || {};
+            const url = tabData.url || 'N/A';
+            const title = tabData.title || url;
+
+            // Extract domain from URL
+            let domain = 'N/A';
+            try {
+                if (url && url !== 'N/A') {
+                    domain = new URL(url).hostname;
+                }
+            } catch (e) {
+                domain = 'N/A';
+            }
+
             table.push([
                 doc.id || 'N/A',
-                this.truncate(doc.title, 25),
-                this.truncate(doc.url, 40),
-                doc.domain || 'N/A',
+                this.truncate(title, 25),
+                this.truncate(url, 40),
+                domain,
                 this.formatDate(doc.createdAt)
             ]);
         });

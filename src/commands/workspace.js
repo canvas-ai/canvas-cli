@@ -182,7 +182,58 @@ export class WorkspaceCommand extends BaseCommand {
         }
     }
 
+    /**
+     * List all documents in workspace
+     */
+    async handleDocuments(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
 
+        try {
+            const response = await this.apiClient.getDocuments(workspaceId, 'workspace');
+            let documents = response.payload || response.data || response;
+
+            if (Array.isArray(documents) && documents.length === 0) {
+                console.log(chalk.yellow('No documents found in this workspace'));
+                return 0;
+            }
+
+            this.output(documents, 'document');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to list documents: ${error.message}`);
+        }
+    }
+
+    /**
+     * List tabs in workspace
+     */
+    async handleTabs(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const options = {
+                featureArray: ['data/abstraction/tab']
+            };
+            const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
+            let tabs = response.payload || response.data || response;
+
+            if (Array.isArray(tabs) && tabs.length === 0) {
+                console.log(chalk.yellow('No tabs found in this workspace'));
+                return 0;
+            }
+
+            this.output(tabs, 'document', 'tab');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to list tabs: ${error.message}`);
+        }
+    }
 
     /**
      * Show help
@@ -196,6 +247,8 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  delete <id>           Delete workspace');
         console.log('  start <id>            Start workspace');
         console.log('  stop <id>             Stop workspace');
+        console.log('  documents <id>        List all documents in workspace');
+        console.log('  tabs <id>             List tabs in workspace');
         console.log();
         console.log(chalk.bold('Options:'));
         console.log('  --name <name>         Workspace name (for update)');
@@ -208,6 +261,8 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  canvas workspace show universe');
         console.log('  canvas workspace start universe');
         console.log('  canvas workspace stop universe');
+        console.log('  canvas workspace documents universe');
+        console.log('  canvas workspace tabs universe');
         console.log('  canvas workspace delete test1 --force');
         console.log();
         console.log(chalk.cyan('Architecture:'));
