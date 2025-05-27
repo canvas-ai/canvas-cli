@@ -523,7 +523,6 @@ export class ContextCommand extends BaseCommand {
             let result = response.payload || response.data || response;
 
             console.log(chalk.green(`✓ Tab added successfully`));
-            this.output(result, 'document', 'tab');
             return 0;
         } catch (error) {
             throw new Error(`Failed to add tab: ${error.message}`);
@@ -541,15 +540,9 @@ export class ContextCommand extends BaseCommand {
 
         const contextId = this.getCurrentContext(parsed.options);
 
-        if (!parsed.options.force) {
-            console.log(chalk.yellow(`Warning: This will permanently delete document '${documentId}' from context '${contextId}'.`));
-            console.log(chalk.yellow('Use --force to confirm deletion.'));
-            return 1;
-        }
-
         try {
             await this.apiClient.deleteDocument(contextId, documentId, 'context');
-            console.log(chalk.green(`✓ Document '${documentId}' removed successfully`));
+            console.log(chalk.green(`✓ Document '${documentId}' removed from context '${contextId}'`));
             return 0;
         } catch (error) {
             throw new Error(`Failed to remove document: ${error.message}`);
@@ -606,7 +599,7 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context documents');
         console.log('  canvas context tabs');
         console.log('  canvas context tab add https://example.com --title "Example Site"');
-        console.log('  canvas context remove 12345 --force');
+        console.log('  canvas context remove 12345');
         console.log();
         console.log(chalk.cyan('Architecture:'));
         console.log('  • Contexts are views/filters on top of workspaces');

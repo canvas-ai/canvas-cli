@@ -194,7 +194,9 @@ export class CanvasApiClient {
 
     async deleteDocument(containerId, documentId, containerType = 'context') {
         const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
-        const response = await this.client.delete(`${baseUrl}/documents/${documentId}`);
+        const response = await this.client.delete(`${baseUrl}/documents/remove`, {
+            data: documentId
+        });
         return response.data;
     }
 
