@@ -749,7 +749,7 @@ export class ContextCommand extends BaseCommand {
         console.log(chalk.bold('Examples:'));
         console.log('  canvas context list');
         console.log('  canvas context create my-project');
-        console.log('  canvas context create work-proj work://mb/devops/jira-1234');
+        console.log('  canvas context create work-proj work://acme-org/devops/jira-1234');
         console.log('  canvas context create travel /travel --description "Travel Plans"');
         console.log('  canvas context switch my-project');
         console.log('  canvas context set universe://new/path');
@@ -767,8 +767,8 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context document remove 33333 44444 55555');
         console.log();
         console.log(chalk.cyan('Architecture:'));
-        console.log('  • Contexts are views/filters on top of workspaces');
-        console.log('  • Context URLs: workspace://path (e.g., work://mb/devops/jira-1234)');
+        console.log('  • Contexts are views/filters on top of your data');
+        console.log('  • Context URLs: workspace://path (e.g., work://acme-org/devops/jira-1234)');
         console.log('  • Default workspace is "universe" for relative paths');
         console.log('  • CLI binds to "default" context by default');
         console.log('  • Delete = permanent removal from database');
