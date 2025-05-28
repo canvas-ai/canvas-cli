@@ -200,6 +200,14 @@ export class CanvasApiClient {
         return response.data;
     }
 
+    async deleteDocuments(containerId, documentIds, containerType = 'context') {
+        const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
+        const response = await this.client.delete(`${baseUrl}/documents/remove`, {
+            data: documentIds
+        });
+        return response.data;
+    }
+
     // Schema API methods
     async getSchemas() {
         const response = await this.client.get('/schemas');

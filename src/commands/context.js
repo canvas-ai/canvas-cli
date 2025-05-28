@@ -448,7 +448,7 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
-     * Handle tab commands (list, add)
+     * Handle tab commands (list, add, delete, remove)
      */
     async handleTab(parsed) {
         const action = parsed.args[1] || 'list';
@@ -457,9 +457,13 @@ export class ContextCommand extends BaseCommand {
             return this.handleTabList(parsed);
         } else if (action === 'add') {
             return this.handleTabAdd(parsed);
+        } else if (action === 'delete') {
+            return this.handleTabDelete(parsed);
+        } else if (action === 'remove') {
+            return this.handleTabRemove(parsed);
         } else {
             console.error(chalk.red(`Unknown tab action: ${action}`));
-            console.log(chalk.yellow('Available actions: list, add'));
+            console.log(chalk.yellow('Available actions: list, add, delete, remove'));
             return 1;
         }
     }
@@ -530,22 +534,175 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
-     * Remove document from context
+     * Delete tabs from database (permanent)
      */
-    async handleRemove(parsed) {
-        const documentId = parsed.args[1];
-        if (!documentId) {
-            throw new Error('Document ID is required');
+    async handleTabDelete(parsed) {
+        const documentIds = parsed.args.slice(2); // Skip 'tab' and 'delete'
+        if (documentIds.length === 0) {
+            throw new Error('At least one document ID is required');
         }
 
+        return this.handleDocumentOperation(parsed, documentIds, 'delete', 'data/abstraction/tab', 'tab');
+    }
+
+    /**
+     * Remove tabs from context (like removing symlinks)
+     */
+    async handleTabRemove(parsed) {
+        const documentIds = parsed.args.slice(2); // Skip 'tab' and 'remove'
+        if (documentIds.length === 0) {
+            throw new Error('At least one document ID is required');
+        }
+
+        return this.handleDocumentOperation(parsed, documentIds, 'remove', 'data/abstraction/tab', 'tab');
+    }
+
+    /**
+     * Handle note commands (delete, remove)
+     */
+    async handleNote(parsed) {
+        const action = parsed.args[1] || 'list';
+
+        if (action === 'delete') {
+            return this.handleNoteDelete(parsed);
+        } else if (action === 'remove') {
+            return this.handleNoteRemove(parsed);
+        } else {
+            console.error(chalk.red(`Unknown note action: ${action}`));
+            console.log(chalk.yellow('Available actions: delete, remove'));
+            return 1;
+        }
+    }
+
+    /**
+     * Delete notes from database (permanent)
+     */
+    async handleNoteDelete(parsed) {
+        const documentIds = parsed.args.slice(2); // Skip 'note' and 'delete'
+        if (documentIds.length === 0) {
+            throw new Error('At least one document ID is required');
+        }
+
+        return this.handleDocumentOperation(parsed, documentIds, 'delete', 'data/abstraction/note', 'note');
+    }
+
+    /**
+     * Remove notes from context (like removing symlinks)
+     */
+    async handleNoteRemove(parsed) {
+        const documentIds = parsed.args.slice(2); // Skip 'note' and 'remove'
+        if (documentIds.length === 0) {
+            throw new Error('At least one document ID is required');
+        }
+
+        return this.handleDocumentOperation(parsed, documentIds, 'remove', 'data/abstraction/note', 'note');
+    }
+
+    /**
+     * Handle document commands (delete, remove)
+     */
+    async handleDocument(parsed) {
+        const action = parsed.args[1] || 'list';
+
+        if (action === 'delete') {
+            return this.handleDocumentDelete(parsed);
+        } else if (action === 'remove') {
+            return this.handleDocumentRemove(parsed);
+        } else {
+            console.error(chalk.red(`Unknown document action: ${action}`));
+            console.log(chalk.yellow('Available actions: delete, remove'));
+            return 1;
+        }
+    }
+
+    /**
+     * Delete documents from database (permanent)
+     */
+    async handleDocumentDelete(parsed) {
+        const documentIds = parsed.args.slice(2); // Skip 'document' and 'delete'
+        if (documentIds.length === 0) {
+            throw new Error('At least one document ID is required');
+        }
+
+        return this.handleDocumentOperation(parsed, documentIds, 'delete', null, 'document');
+    }
+
+    /**
+     * Remove documents from context (like removing symlinks)
+     */
+    async handleDocumentRemove(parsed) {
+        const documentIds = parsed.args.slice(2); // Skip 'document' and 'remove'
+        if (documentIds.length === 0) {
+            throw new Error('At least one document ID is required');
+        }
+
+        return this.handleDocumentOperation(parsed, documentIds, 'remove', null, 'document');
+    }
+
+    /**
+     * Generic handler for document operations (delete/remove)
+     */
+    async handleDocumentOperation(parsed, documentIds, operation, featureArray, docType) {
         const contextId = this.getCurrentContext(parsed.options);
 
         try {
-            await this.apiClient.deleteDocument(contextId, documentId, 'context');
-            console.log(chalk.green(`✓ Document '${documentId}' removed from context '${contextId}'`));
-            return 0;
+            const results = [];
+            const errors = [];
+
+            // For now, we only support remove operation since delete from DB isn't implemented yet
+            if (operation === 'delete') {
+                console.log(chalk.yellow(`Warning: Database deletion not yet implemented. Using remove instead.`));
+                operation = 'remove';
+            }
+
+            // Process documents one by one or in bulk
+            if (documentIds.length === 1) {
+                try {
+                    await this.apiClient.deleteDocument(contextId, documentIds[0], 'context');
+                    results.push(documentIds[0]);
+                } catch (error) {
+                    errors.push({ id: documentIds[0], error: error.message });
+                }
+            } else {
+                try {
+                    await this.apiClient.deleteDocuments(contextId, documentIds, 'context');
+                    results.push(...documentIds);
+                } catch (error) {
+                    // If bulk fails, try individual deletions
+                    for (const documentId of documentIds) {
+                        try {
+                            await this.apiClient.deleteDocument(contextId, documentId, 'context');
+                            results.push(documentId);
+                        } catch (individualError) {
+                            errors.push({ id: documentId, error: individualError.message });
+                        }
+                    }
+                }
+            }
+
+            // Report results
+            const operationText = operation === 'delete' ? 'deleted from database' : 'removed from context';
+
+            if (results.length > 0) {
+                if (results.length === 1) {
+                    console.log(chalk.green(`✓ ${docType} '${results[0]}' ${operationText}`));
+                } else {
+                    console.log(chalk.green(`✓ ${results.length} ${docType}s ${operationText}:`));
+                    results.forEach(id => console.log(chalk.green(`  - ${id}`)));
+                }
+            }
+
+            if (errors.length > 0) {
+                console.log(chalk.red(`✗ Failed to ${operation} ${errors.length} ${docType}(s):`));
+                errors.forEach(({ id, error }) => {
+                    console.log(chalk.red(`  - ${id}: ${error}`));
+                });
+            }
+
+            // Return success if at least one document was processed
+            return errors.length === documentIds.length ? 1 : 0;
         } catch (error) {
-            throw new Error(`Failed to remove document: ${error.message}`);
+            throw new Error(`Failed to ${operation} ${docType}s: ${error.message}`);
         }
     }
 
@@ -571,11 +728,16 @@ export class ContextCommand extends BaseCommand {
         console.log('  update <id>           Update context');
         console.log();
         console.log(chalk.bold('Document Commands:'));
-        console.log('  documents [id]        List all documents in context');
+        console.log('  documents             List all documents in context');
         console.log('  tab list              List tabs in context');
         console.log('  tabs                  List tabs in context (alias)');
         console.log('  tab add <url>         Add a tab to context');
-        console.log('  remove <doc-id>       Remove document from context');
+        console.log('  tab delete <id...>    Delete tabs from database (permanent)');
+        console.log('  tab remove <id...>    Remove tabs from context');
+        console.log('  note delete <id...>   Delete notes from database (permanent)');
+        console.log('  note remove <id...>   Remove notes from context');
+        console.log('  document delete <id...> Delete documents from database (permanent)');
+        console.log('  document remove <id...> Remove documents from context');
         console.log();
         console.log(chalk.bold('Options:'));
         console.log('  --description <desc>  Context description');
@@ -599,13 +761,18 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context documents');
         console.log('  canvas context tabs');
         console.log('  canvas context tab add https://example.com --title "Example Site"');
-        console.log('  canvas context remove 12345');
+        console.log('  canvas context tab delete 12345');
+        console.log('  canvas context tab remove 12345 67890');
+        console.log('  canvas context note delete 11111 22222');
+        console.log('  canvas context document remove 33333 44444 55555');
         console.log();
         console.log(chalk.cyan('Architecture:'));
         console.log('  • Contexts are views/filters on top of workspaces');
         console.log('  • Context URLs: workspace://path (e.g., work://mb/devops/jira-1234)');
         console.log('  • Default workspace is "universe" for relative paths');
         console.log('  • CLI binds to "default" context by default');
+        console.log('  • Delete = permanent removal from database');
+        console.log('  • Remove = remove from context only (like removing symlinks)');
     }
 }
 
