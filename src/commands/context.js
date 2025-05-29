@@ -23,7 +23,7 @@ export class ContextCommand extends BaseCommand {
             await this.checkConnection();
 
             // Handle special case for hyphenated commands
-            const action = parsed.args[0] || 'list';
+            const action = parsed.args[0] || 'current';
             let methodName;
 
             if (action === 'base-url') {
@@ -558,19 +558,88 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
-     * Handle note commands (delete, remove)
+     * Handle note commands (list, add, delete, remove)
      */
     async handleNote(parsed) {
         const action = parsed.args[1] || 'list';
 
-        if (action === 'delete') {
+        if (action === 'list') {
+            return this.handleNoteList(parsed);
+        } else if (action === 'add') {
+            return this.handleNoteAdd(parsed);
+        } else if (action === 'delete') {
             return this.handleNoteDelete(parsed);
         } else if (action === 'remove') {
             return this.handleNoteRemove(parsed);
         } else {
             console.error(chalk.red(`Unknown note action: ${action}`));
-            console.log(chalk.yellow('Available actions: delete, remove'));
+            console.log(chalk.yellow('Available actions: list, add, delete, remove'));
             return 1;
+        }
+    }
+
+    /**
+     * Handle notes command (alias for note list)
+     */
+    async handleNotes(parsed) {
+        return this.handleNoteList(parsed);
+    }
+
+    /**
+     * List notes in context
+     */
+    async handleNoteList(parsed) {
+        const contextId = this.getCurrentContext(parsed.options);
+
+        try {
+            const options = {
+                featureArray: ['data/abstraction/note']
+            };
+            const response = await this.apiClient.getDocuments(contextId, 'context', options);
+            let notes = response.payload || response.data || response;
+
+            if (Array.isArray(notes) && notes.length === 0) {
+                console.log(chalk.yellow('No notes found in this context'));
+                return 0;
+            }
+
+            this.output(notes, 'document', 'note');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to list notes: ${error.message}`);
+        }
+    }
+
+    /**
+     * Add a note to context
+     */
+    async handleNoteAdd(parsed) {
+        const noteText = parsed.args[2];
+        if (!noteText) {
+            throw new Error('Note text is required');
+        }
+
+        const contextId = this.getCurrentContext(parsed.options);
+        const title = parsed.options.title || `Note - ${new Date().toLocaleString()}`;
+
+        const noteDocument = {
+            schema: 'data/abstraction/note',
+            data: {
+                text: noteText,
+                title: title,
+                timestamp: new Date().toISOString()
+            }
+        };
+
+        try {
+            const featureArray = ['data/abstraction/note'];
+            const response = await this.apiClient.createDocument(contextId, noteDocument, 'context', featureArray);
+            let result = response.payload || response.data || response;
+
+            console.log(chalk.green(`✓ Note added successfully`));
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to add note: ${error.message}`);
         }
     }
 
@@ -711,6 +780,8 @@ export class ContextCommand extends BaseCommand {
      */
     showHelp() {
         console.log(chalk.bold('Context Commands:'));
+        console.log('  (no args)             Show current context (default)');
+        console.log('  current               Show current context');
         console.log('  list                  List all contexts');
         console.log('  show [id]             Show context details (current if no ID)');
         console.log('  create <id> [url]     Create new context with optional URL');
@@ -724,7 +795,6 @@ export class ContextCommand extends BaseCommand {
         console.log('  paths                 Get all available context paths');
         console.log('  tree [id]             Show context tree for workspace');
         console.log('  workspace [id]        Get the context workspace');
-        console.log('  current               Show current context');
         console.log('  update <id>           Update context');
         console.log();
         console.log(chalk.bold('Document Commands:'));
@@ -734,6 +804,9 @@ export class ContextCommand extends BaseCommand {
         console.log('  tab add <url>         Add a tab to context');
         console.log('  tab delete <id...>    Delete tabs from database (permanent)');
         console.log('  tab remove <id...>    Remove tabs from context');
+        console.log('  note list             List notes in context');
+        console.log('  notes                 List notes in context (alias)');
+        console.log('  note add <text>       Add a note to context');
         console.log('  note delete <id...>   Delete notes from database (permanent)');
         console.log('  note remove <id...>   Remove notes from context');
         console.log('  document delete <id...> Delete documents from database (permanent)');
@@ -743,10 +816,12 @@ export class ContextCommand extends BaseCommand {
         console.log('  --description <desc>  Context description');
         console.log('  --color <value>       Context color');
         console.log('  --metadata <json>     Context metadata (JSON string)');
-        console.log('  --title <title>       Title for documents (e.g., tabs)');
+        console.log('  --title <title>       Title for documents (e.g., tabs, notes)');
         console.log('  --force               Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
+        console.log('  canvas context                    # Show current context');
+        console.log('  canvas contexts                   # List all contexts (alias)');
         console.log('  canvas context list');
         console.log('  canvas context create my-project');
         console.log('  canvas context create work-proj work://acme-org/devops/jira-1234');
@@ -756,6 +831,8 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context url');
         console.log('  canvas context tree');
         console.log('  canvas context destroy old-project --force');
+        console.log('  canvas context notes              # List notes');
+        console.log('  canvas context note add "Remember to check logs" --title "Important"');
         console.log();
         console.log(chalk.bold('Document Examples:'));
         console.log('  canvas context documents');

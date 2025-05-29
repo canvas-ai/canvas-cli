@@ -15,6 +15,7 @@ import { setupDebug } from './utils/debug.js';
 // Commands
 import WorkspaceCommand from './commands/workspace.js';
 import ContextCommand from './commands/context.js';
+import ContextsCommand from './commands/contexts.js';
 import AuthCommand from './commands/auth.js';
 import ConfigCommand from './commands/config.js';
 import ServerCommand from './commands/server.js';
@@ -33,6 +34,7 @@ const COMMANDS = {
   workspace: WorkspaceCommand,
   ws: WorkspaceCommand, // alias
   context: ContextCommand,
+  contexts: ContextsCommand, // alias for context list
   ctx: ContextCommand, // alias
   auth: AuthCommand,
   config: ConfigCommand,
@@ -164,6 +166,7 @@ function showHelp() {
   console.log(chalk.bold('Commands:'));
   console.log('  workspace, ws     Manage workspaces');
   console.log('  context, ctx      Manage contexts');
+  console.log('  contexts          List all contexts (alias)');
   console.log('  auth              Manage authentication');
   console.log('  config            Manage configuration');
   console.log('  server            Manage local Canvas server (PM2)');
@@ -182,14 +185,20 @@ function showHelp() {
 
   console.log(chalk.bold('Examples:'));
   console.log('  canvas server start');
-  console.log('  canvas workspace list');
+  console.log('  canvas ws                           # List workspaces');
+  console.log('  canvas ws universe                  # Show universe workspace');
+  console.log('  canvas ws universe tree             # Show workspace tree');
+  console.log('  canvas context                      # Show current context');
+  console.log('  canvas contexts                     # List all contexts');
   console.log('  canvas context create my-project');
   console.log('  canvas context switch my-project');
   console.log('  canvas context documents');
   console.log('  canvas context tabs');
+  console.log('  canvas context notes                # List notes');
+  console.log('  canvas context note add "Remember to check logs" --title "Important"');
   console.log('  canvas context tab add https://example.com --title "Example Site"');
-  console.log('  canvas workspace documents universe');
-  console.log('  canvas workspace tabs universe');
+  console.log('  canvas ws universe documents        # List workspace documents');
+  console.log('  canvas ws universe tabs             # List workspace tabs');
   console.log('  canvas q "How do I create a new context?"');
   console.log('  cat error.log | canvas q "What does this error mean?"');
   console.log();

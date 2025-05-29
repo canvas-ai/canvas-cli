@@ -98,6 +98,11 @@ export class CanvasApiClient {
         return response.data;
     }
 
+    async getWorkspaceTree(workspaceId) {
+        const response = await this.client.get(`/workspaces/${workspaceId}/tree`);
+        return response.data;
+    }
+
     // Context API methods
     async getContexts(options = {}) {
         const params = new URLSearchParams();

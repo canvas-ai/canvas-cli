@@ -13,8 +13,66 @@ export class WorkspaceCommand extends BaseCommand {
     }
 
     async execute(parsed) {
-        this.options = parsed.options;
-        return super.execute(parsed);
+        try {
+            this.options = parsed.options;
+
+            // Collect client context for this execution
+            this.collectClientContext();
+
+            // Check if server is reachable
+            await this.checkConnection();
+
+            // If no arguments, default to list
+            if (parsed.args.length === 0) {
+                return await this.handleList(parsed);
+            }
+
+            const firstArg = parsed.args[0];
+            const secondArg = parsed.args[1];
+
+            // Check if first arg is a known action
+            const knownActions = ['list', 'show', 'create', 'update', 'delete', 'start', 'stop', 'documents', 'document', 'tabs', 'notes', 'tree', 'help'];
+
+            if (knownActions.includes(firstArg)) {
+                // Route to appropriate action
+                const action = firstArg;
+                const methodName = `handle${action.charAt(0).toUpperCase() + action.slice(1)}`;
+
+                if (typeof this[methodName] === 'function') {
+                    return await this[methodName](parsed);
+                } else {
+                    console.error(chalk.red(`Unknown action: ${action}`));
+                    this.showHelp();
+                    return 1;
+                }
+            } else {
+                // First arg is workspace ID, second arg is action
+                const workspaceId = firstArg;
+                const action = secondArg || 'show'; // default to show if no action specified
+
+                // Create modified parsed object with workspace ID in correct position
+                const modifiedParsed = {
+                    ...parsed,
+                    args: [action, workspaceId, ...parsed.args.slice(2)]
+                };
+
+                const methodName = `handle${action.charAt(0).toUpperCase() + action.slice(1)}`;
+
+                if (typeof this[methodName] === 'function') {
+                    return await this[methodName](modifiedParsed);
+                } else {
+                    console.error(chalk.red(`Unknown action: ${action}`));
+                    this.showHelp();
+                    return 1;
+                }
+            }
+        } catch (error) {
+            console.error(chalk.red('Error:'), error.message);
+            if (process.env.DEBUG) {
+                console.error(error.stack);
+            }
+            return 1;
+        }
     }
 
     /**
@@ -236,10 +294,100 @@ export class WorkspaceCommand extends BaseCommand {
     }
 
     /**
+     * List documents in workspace (alias for handleDocuments)
+     */
+    async handleDocument(parsed) {
+        return this.handleDocuments(parsed);
+    }
+
+    /**
+     * List notes in workspace
+     */
+    async handleNotes(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const options = {
+                featureArray: ['data/abstraction/note']
+            };
+            const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
+            let notes = response.payload || response.data || response;
+
+            if (Array.isArray(notes) && notes.length === 0) {
+                console.log(chalk.yellow('No notes found in this workspace'));
+                return 0;
+            }
+
+            this.output(notes, 'document', 'note');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to list notes: ${error.message}`);
+        }
+    }
+
+    /**
+     * Show workspace tree
+     */
+    async handleTree(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const response = await this.apiClient.getWorkspaceTree(workspaceId);
+            let tree = response.payload || response.data || response;
+
+            if (!tree || !tree.children) {
+                console.log(chalk.yellow('No tree structure found for this workspace'));
+                return 0;
+            }
+
+            console.log(chalk.bold(`Workspace Tree: ${workspaceId}`));
+            console.log();
+            this.displayTreeNode(tree);
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to get workspace tree: ${error.message}`);
+        }
+    }
+
+    /**
+     * Display a tree node recursively (borrowed from context command)
+     */
+    displayTreeNode(node, prefix = '', isLast = true) {
+        if (!node) return;
+
+        const connector = isLast ? '└── ' : '├── ';
+        const nameDisplay = node.label || node.name || node.id;
+        const typeDisplay = node.type === 'universe' ? chalk.cyan('[UNIVERSE]') : '';
+        const colorDisplay = node.color ? chalk.hex(node.color)('●') : '';
+
+        console.log(`${prefix}${connector}${nameDisplay} ${typeDisplay} ${colorDisplay}`);
+
+        if (node.description && node.description !== 'Canvas layer') {
+            const descPrefix = prefix + (isLast ? '    ' : '│   ');
+            console.log(`${descPrefix}${chalk.gray(node.description)}`);
+        }
+
+        if (node.children && Array.isArray(node.children)) {
+            const childPrefix = prefix + (isLast ? '    ' : '│   ');
+            node.children.forEach((child, index) => {
+                const isLastChild = index === node.children.length - 1;
+                this.displayTreeNode(child, childPrefix, isLastChild);
+            });
+        }
+    }
+
+    /**
      * Show help
      */
     showHelp() {
         console.log(chalk.bold('Workspace Commands:'));
+        console.log('  (no args)             List all workspaces (default)');
         console.log('  list                  List all workspaces');
         console.log('  show <id>             Show workspace details');
         console.log('  create <name>         Create new workspace');
@@ -247,8 +395,20 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  delete <id>           Delete workspace');
         console.log('  start <id>            Start workspace');
         console.log('  stop <id>             Stop workspace');
+        console.log();
+        console.log(chalk.bold('Workspace-specific Commands:'));
+        console.log('  <id>                  Show workspace details (shorthand)');
+        console.log('  <id> tree             Show workspace tree');
+        console.log('  <id> documents        List all documents in workspace');
+        console.log('  <id> document         List all documents in workspace (alias)');
+        console.log('  <id> tabs             List tabs in workspace');
+        console.log('  <id> notes            List notes in workspace');
+        console.log();
+        console.log(chalk.bold('Legacy Commands (still supported):'));
         console.log('  documents <id>        List all documents in workspace');
         console.log('  tabs <id>             List tabs in workspace');
+        console.log('  notes <id>            List notes in workspace');
+        console.log('  tree <id>             Show workspace tree');
         console.log();
         console.log(chalk.bold('Options:'));
         console.log('  --name <name>         Workspace name (for update)');
@@ -256,13 +416,17 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  --force               Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
+        console.log('  canvas ws                         # List all workspaces');
+        console.log('  canvas ws universe                # Show universe workspace');
+        console.log('  canvas ws universe tree           # Show universe tree');
+        console.log('  canvas ws universe documents      # List documents');
+        console.log('  canvas ws universe notes          # List notes');
+        console.log('  canvas ws universe tabs           # List tabs');
+        console.log();
         console.log('  canvas workspace list');
         console.log('  canvas workspace create "My Project"');
-        console.log('  canvas workspace show universe');
         console.log('  canvas workspace start universe');
         console.log('  canvas workspace stop universe');
-        console.log('  canvas workspace documents universe');
-        console.log('  canvas workspace tabs universe');
         console.log('  canvas workspace delete test1 --force');
         console.log();
         console.log(chalk.cyan('Architecture:'));
