@@ -251,7 +251,10 @@ export class WorkspaceCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace');
-            let documents = response.payload || response.data || response;
+
+            // Fix: Extract documents from ResponseObject format
+            // The actual documents array is at response.payload.data
+            let documents = response.payload?.data || response.payload || response.data || [];
 
             if (Array.isArray(documents) && documents.length === 0) {
                 console.log(chalk.yellow('No documents found in this workspace'));
@@ -279,7 +282,9 @@ export class WorkspaceCommand extends BaseCommand {
                 featureArray: ['data/abstraction/tab']
             };
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
-            let tabs = response.payload || response.data || response;
+            // Fix: Extract tabs from ResponseObject format
+            // The actual tabs array is at response.payload.data
+            let tabs = response.payload?.data || response.payload || response.data || [];
 
             if (Array.isArray(tabs) && tabs.length === 0) {
                 console.log(chalk.yellow('No tabs found in this workspace'));
@@ -314,7 +319,9 @@ export class WorkspaceCommand extends BaseCommand {
                 featureArray: ['data/abstraction/note']
             };
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
-            let notes = response.payload || response.data || response;
+            // Fix: Extract notes from ResponseObject format
+            // The actual notes array is at response.payload.data
+            let notes = response.payload?.data || response.payload || response.data || [];
 
             if (Array.isArray(notes) && notes.length === 0) {
                 console.log(chalk.yellow('No notes found in this workspace'));

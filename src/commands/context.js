@@ -853,13 +853,15 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context note delete 11111 22222');
         console.log('  canvas context document remove 33333 44444 55555');
         console.log();
-        console.log(chalk.cyan('Architecture:'));
+        console.log(chalk.bold('Architecture:'));
         console.log('  • Contexts are views/filters on top of your data');
         console.log('  • Context URLs: workspace://path (e.g., work://acme-org/devops/jira-1234)');
         console.log('  • Default workspace is "universe" for relative paths');
         console.log('  • CLI binds to "default" context by default');
         console.log('  • Delete = permanent removal from database');
         console.log('  • Remove = remove from context only (like removing symlinks)');
+        console.log('  • For contexts: only destroy is available (removes entire context)');
+        console.log('  • For documents: both delete and remove are available');
     }
 }
 
