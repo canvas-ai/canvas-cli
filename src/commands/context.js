@@ -718,29 +718,39 @@ export class ContextCommand extends BaseCommand {
             const results = [];
             const errors = [];
 
-            // For now, we only support remove operation since delete from DB isn't implemented yet
-            if (operation === 'delete') {
-                console.log(chalk.yellow(`Warning: Database deletion not yet implemented. Using remove instead.`));
-                operation = 'remove';
-            }
-
             // Process documents one by one or in bulk
             if (documentIds.length === 1) {
                 try {
-                    await this.apiClient.deleteDocument(contextId, documentIds[0], 'context');
+                    if (operation === 'delete') {
+                        // Use database deletion for permanent removal (always use 'context' containerType)
+                        await this.apiClient.deleteDocument(contextId, documentIds[0], 'context');
+                    } else {
+                        // Use context removal for removing from context only
+                        await this.apiClient.removeDocument(contextId, documentIds[0], 'context');
+                    }
                     results.push(documentIds[0]);
                 } catch (error) {
                     errors.push({ id: documentIds[0], error: error.message });
                 }
             } else {
                 try {
-                    await this.apiClient.deleteDocuments(contextId, documentIds, 'context');
+                    if (operation === 'delete') {
+                        // Use database deletion for permanent removal (always use 'context' containerType)
+                        await this.apiClient.deleteDocuments(contextId, documentIds, 'context');
+                    } else {
+                        // Use context removal for removing from context only
+                        await this.apiClient.removeDocuments(contextId, documentIds, 'context');
+                    }
                     results.push(...documentIds);
                 } catch (error) {
                     // If bulk fails, try individual deletions
                     for (const documentId of documentIds) {
                         try {
-                            await this.apiClient.deleteDocument(contextId, documentId, 'context');
+                            if (operation === 'delete') {
+                                await this.apiClient.deleteDocument(contextId, documentId, 'context');
+                            } else {
+                                await this.apiClient.removeDocument(contextId, documentId, 'context');
+                            }
                             results.push(documentId);
                         } catch (individualError) {
                             errors.push({ id: documentId, error: individualError.message });

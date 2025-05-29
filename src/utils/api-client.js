@@ -198,19 +198,43 @@ export class CanvasApiClient {
     }
 
     async deleteDocument(containerId, documentId, containerType = 'context') {
-        const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
-        const response = await this.client.delete(`${baseUrl}/documents/remove`, {
-            data: documentId
+        // Fix: containerType should only determine route (context vs workspace), not operation type
+        const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
+
+        // Operation type should be determined by method name, not containerType
+        // For context routes: root = database deletion, /remove = context removal
+        // For workspace routes: root = database deletion, /remove = workspace removal
+        const endpoint = `${baseUrl}/documents`; // Always use root endpoint for database deletion
+
+        // Always send as array since backend now requires arrays
+        const documentIdArray = [documentId];
+
+        // Use axios.delete directly with data parameter
+        const response = await this.client.delete(endpoint, {
+            data: documentIdArray
         });
         return response.data;
     }
 
     async deleteDocuments(containerId, documentIds, containerType = 'context') {
-        const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
-        const response = await this.client.delete(`${baseUrl}/documents/remove`, {
+        // Fix: containerType should only determine route (context vs workspace), not operation type
+        const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
+
+        // Always use root endpoint for database deletion
+        const endpoint = `${baseUrl}/documents`;
+
+        // Use axios.delete directly with data parameter
+        const response = await this.client.delete(endpoint, {
             data: documentIds
         });
         return response.data;
+    }
+
+    // Test method using WebSocket instead of REST for delete operations
+    async deleteDocumentViaWebSocket(containerId, documentId, containerType = 'context') {
+        // This is a temporary test method - in production we'd need proper WebSocket client setup
+        console.log(`Would delete document ${documentId} from ${containerId} via WebSocket (${containerType})`);
+        return { success: true, method: 'websocket', documentId, containerId, containerType };
     }
 
     // Schema API methods
@@ -263,6 +287,37 @@ export class CanvasApiClient {
     // Health check
     async ping() {
         const response = await this.client.get('/ping');
+        return response.data;
+    }
+
+    async removeDocument(containerId, documentId, containerType = 'context') {
+        // Fix: containerType should only determine route (context vs workspace), not operation type
+        const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
+
+        // Use /remove endpoint for removal operations (remove from context/workspace)
+        const endpoint = `${baseUrl}/documents/remove`;
+
+        // Always send as array since backend now requires arrays
+        const documentIdArray = [documentId];
+
+        // Use axios.delete directly with data parameter
+        const response = await this.client.delete(endpoint, {
+            data: documentIdArray
+        });
+        return response.data;
+    }
+
+    async removeDocuments(containerId, documentIds, containerType = 'context') {
+        // Fix: containerType should only determine route (context vs workspace), not operation type
+        const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
+
+        // Use /remove endpoint for removal operations (remove from context/workspace)
+        const endpoint = `${baseUrl}/documents/remove`;
+
+        // Use axios.delete directly with data parameter
+        const response = await this.client.delete(endpoint, {
+            data: documentIds
+        });
         return response.data;
     }
 }
