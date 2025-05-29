@@ -4,18 +4,49 @@ A command-line interface for managing Canvas workspaces, contexts, and documents
 
 ## Installation
 
-### Local Development
+### Platform Requirements
+- **Node.js**: v20 LTS or higher
+- **Operating Systems**: Linux, macOS, Windows 10/11
+- **Optional**: PM2 for local server management (`npm install -g pm2`)
 
-#### Quick Install (Recommended)
+### Method 1: Quick Install (Recommended)
+
+#### Linux/Mac
 ```bash
 # Run the installation script
 ./scripts/install.sh
 ```
 
-#### Manual Install
+#### Windows
+```powershell
+# PowerShell (Recommended)
+.\scripts\install.ps1
+```
+
+```batch
+:: Command Prompt
+.\scripts\install.bat
+```
+
+The installation scripts will:
+- Check Node.js version compatibility (v20+ required)
+- Create symlinks (Linux/Mac) or add bin directory to PATH (Windows)
+- Make executables executable (Linux/Mac)
+- Check if the local bin directory is accessible
+- Verify PM2 installation for server management
+
+### Method 2: Manual Install (Cross-Platform)
+
+#### Linux/Mac
 ```bash
-# Create symlink to your local bin directory
-ln -sf ~/path/to/src/bin/canvas ~/.local/bin/canvas
+# Create symlinks to your local bin directory
+ln -sf $(pwd)/bin/canvas.js ~/.local/bin/canvas
+ln -sf $(pwd)/bin/context.js ~/.local/bin/context
+ln -sf $(pwd)/bin/ws.js ~/.local/bin/ws
+ln -sf $(pwd)/bin/q.js ~/.local/bin/q
+
+# Make binaries executable
+chmod +x bin/*
 
 # Ensure ~/.local/bin is in your PATH
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
@@ -25,13 +56,96 @@ source ~/.bashrc
 npm install -g pm2
 ```
 
-### Global Installation
+#### Windows
+```powershell
+# Option 1: PowerShell (Run as Administrator)
+# Add Canvas CLI bin directory to your PATH
+$CanvasPath = (Get-Location).Path + "\bin"
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$CanvasPath", [EnvironmentVariableTarget]::User)
+
+# Restart your terminal for PATH changes to take effect
+```
+
+```batch
+:: Option 2: Command Prompt (Run as Administrator)
+:: Add Canvas CLI bin directory to your PATH
+setx PATH "%PATH%;%CD%\bin"
+
+:: Restart your terminal for PATH changes to take effect
+```
+
+```powershell
+# Option 3: Development Environment
+# For development, you can run directly:
+node bin/canvas.js --help
+node bin/context.js list
+node bin/ws.js list
+node bin/q.js "test query"
+```
+
+### Method 3: Global NPM Installation
 ```bash
 # Install dependencies
 npm install
 
-# Link globally
+# Link globally (works on all platforms)
 npm link
+```
+
+This creates global symlinks:
+- `canvas` → Canvas CLI main command
+- `context` → Context management shortcut
+- `ws` → Workspace management shortcut
+- `q` → AI assistant shortcut
+
+### Method 4: Direct Execution (Development)
+```bash
+# Linux/Mac
+node bin/canvas.js --help
+./bin/canvas.js workspace list
+
+# Windows
+node bin\canvas.js --help
+```
+
+### Verification
+Test your installation by running these commands in a new terminal:
+
+```bash
+# Check Canvas CLI installation
+canvas --version
+canvas --help
+
+# Test shortcuts
+context list
+ws list
+q "Hello Canvas!"
+
+# Check server connectivity (if server is running)
+canvas config show
+canvas auth status
+```
+
+#### Windows
+```powershell
+# Check if bin directory is in PATH
+$env:PATH -split ';' | Where-Object { $_ -like "*canvas*" }
+
+# If PATH not updated, add manually in System Environment Variables
+# Or run the setx command again with full path
+```
+
+#### All Platforms
+```bash
+# Verify Node.js installation
+node --version  # Should show v20+ 
+
+# Check file permissions and existence
+ls -la bin/     # Linux/Mac
+dir bin\        # Windows
+
+# Test direct execution
+node bin/canvas.js --version
 ```
 
 ## Usage
@@ -69,12 +183,6 @@ canvas config set server.url http://localhost:8001/rest/v2
 - `canvas context use <id>` - Set current context
 - `canvas context current` - Show current context
 - `canvas context tree` - Show context tree
-
-### Document Management
-- `canvas document list` - List documents in current context
-- `canvas note add --title "Title" < content.txt` - Add note from stdin
-- `canvas file add ./script.sh --title "Script"` - Add file
-- `canvas todo add --title "Task" --due "2024-12-31"` - Add todo
 
 ### Authentication
 - `canvas auth status` - Show authentication status
@@ -301,43 +409,6 @@ Configuration is stored in `~/.canvas/config/canvas-cli.json`:
   }
 }
 ```
-
-## Examples
-
-```bash
-# List all workspaces
-canvas ws list
-
-# Create a new context with a specific name
-canvas ctx create work://project/feature-123 --name "Feature 123"
-
-# Using shortcuts for common commands
-q "Quick question about Canvas"
-context list
-ws create test-workspace
-
-# Add a note from stdin
-echo "Meeting notes from today" | canvas note add --title "Daily Standup"
-
-# Add a file
-canvas file add ./deploy.sh --title "Deployment Script"
-
-# List contexts in a specific workspace
-canvas ctx list --workspace universe
-
-# Show context tree for a specific workspace
-canvas ctx tree --workspace universe
-```
-
-## Global Options
-
-- `-h, --help` - Show help
-- `-v, --version` - Show version
-- `-c, --context` - Set context for command
-- `-w, --workspace` - Set workspace for command
-- `-f, --format` - Output format (table, json, csv)
-- `-r, --raw` - Raw JSON output
-- `-d, --debug` - Enable debug output
 
 ## Troubleshooting
 
