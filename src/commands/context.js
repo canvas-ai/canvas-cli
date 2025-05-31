@@ -715,71 +715,62 @@ export class ContextCommand extends BaseCommand {
         const contextId = this.getCurrentContext(parsed.options);
 
         try {
-            const results = [];
-            const errors = [];
+            let response;
+            let successful = [];
+            let failed = [];
 
-            // Process documents one by one or in bulk
-            if (documentIds.length === 1) {
-                try {
-                    if (operation === 'delete') {
-                        // Use database deletion for permanent removal (always use 'context' containerType)
-                        await this.apiClient.deleteDocument(contextId, documentIds[0], 'context');
-                    } else {
-                        // Use context removal for removing from context only
-                        await this.apiClient.removeDocument(contextId, documentIds[0], 'context');
-                    }
-                    results.push(documentIds[0]);
-                } catch (error) {
-                    errors.push({ id: documentIds[0], error: error.message });
-                }
+            // Always use bulk operations to get proper response format
+            if (operation === 'delete') {
+                response = await this.apiClient.deleteDocuments(contextId, documentIds, 'context');
             } else {
-                try {
-                    if (operation === 'delete') {
-                        // Use database deletion for permanent removal (always use 'context' containerType)
-                        await this.apiClient.deleteDocuments(contextId, documentIds, 'context');
-                    } else {
-                        // Use context removal for removing from context only
-                        await this.apiClient.removeDocuments(contextId, documentIds, 'context');
-                    }
-                    results.push(...documentIds);
-                } catch (error) {
-                    // If bulk fails, try individual deletions
-                    for (const documentId of documentIds) {
-                        try {
-                            if (operation === 'delete') {
-                                await this.apiClient.deleteDocument(contextId, documentId, 'context');
-                            } else {
-                                await this.apiClient.removeDocument(contextId, documentId, 'context');
-                            }
-                            results.push(documentId);
-                        } catch (individualError) {
-                            errors.push({ id: documentId, error: individualError.message });
-                        }
-                    }
+                response = await this.apiClient.removeDocuments(contextId, documentIds, 'context');
+            }
+
+            // Parse the API response to extract successful and failed operations
+            const payload = response.payload || response.data || response;
+
+            if (payload && typeof payload === 'object') {
+                // Handle the detailed response format from SynapsD
+                if (Array.isArray(payload.successful)) {
+                    successful = payload.successful.map(item =>
+                        typeof item === 'object' ? item.id : item
+                    );
                 }
+
+                if (Array.isArray(payload.failed)) {
+                    failed = payload.failed.map(item => ({
+                        id: typeof item === 'object' ? item.id : item,
+                        error: typeof item === 'object' ? item.error : 'Unknown error'
+                    }));
+                }
+            }
+
+            // Fallback: if no detailed response format, assume all succeeded if no exception
+            if (successful.length === 0 && failed.length === 0) {
+                successful = documentIds;
             }
 
             // Report results
             const operationText = operation === 'delete' ? 'deleted from database' : 'removed from context';
 
-            if (results.length > 0) {
-                if (results.length === 1) {
-                    console.log(chalk.green(`✓ ${docType} '${results[0]}' ${operationText}`));
+            if (successful.length > 0) {
+                if (successful.length === 1) {
+                    console.log(chalk.green(`✓ ${docType} '${successful[0]}' ${operationText}`));
                 } else {
-                    console.log(chalk.green(`✓ ${results.length} ${docType}s ${operationText}:`));
-                    results.forEach(id => console.log(chalk.green(`  - ${id}`)));
+                    console.log(chalk.green(`✓ ${successful.length} ${docType}s ${operationText}:`));
+                    successful.forEach(id => console.log(chalk.green(`  - ${id}`)));
                 }
             }
 
-            if (errors.length > 0) {
-                console.log(chalk.red(`✗ Failed to ${operation} ${errors.length} ${docType}(s):`));
-                errors.forEach(({ id, error }) => {
+            if (failed.length > 0) {
+                console.log(chalk.red(`✗ Failed to ${operation} ${failed.length} ${docType}(s):`));
+                failed.forEach(({ id, error }) => {
                     console.log(chalk.red(`  - ${id}: ${error}`));
                 });
             }
 
-            // Return success if at least one document was processed
-            return errors.length === documentIds.length ? 1 : 0;
+            // Return error code if all operations failed, success if any succeeded
+            return failed.length === documentIds.length ? 1 : 0;
         } catch (error) {
             throw new Error(`Failed to ${operation} ${docType}s: ${error.message}`);
         }
