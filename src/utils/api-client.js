@@ -183,9 +183,16 @@ export class CanvasApiClient {
 
     async createDocument(containerId, documentData, containerType = 'context', featureArray = []) {
         const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
+
+        // Always append client/app/canvas-cli to the featureArray for CLI-created documents
+        const enhancedFeatureArray = [...featureArray];
+        if (!enhancedFeatureArray.includes('client/app/canvas-cli')) {
+            enhancedFeatureArray.push('client/app/canvas-cli');
+        }
+
         const payload = {
             documents: documentData,
-            featureArray: featureArray
+            featureArray: enhancedFeatureArray
         };
         const response = await this.client.post(`${baseUrl}/documents`, payload);
         return response.data;

@@ -429,6 +429,51 @@ export class ContextFormatter extends BaseFormatter {
  * Document formatter
  */
 export class DocumentFormatter extends BaseFormatter {
+    formatTable(data, schema) {
+        if (!Array.isArray(data)) {
+            data = [data];
+        }
+
+        if (data.length === 0 || !data[0]) {
+            return chalk.yellow('No data found');
+        }
+
+        // Use schema-specific formatter if available
+        if (schema && this[`format${schema.charAt(0).toUpperCase() + schema.slice(1)}Table`]) {
+            return this[`format${schema.charAt(0).toUpperCase() + schema.slice(1)}Table`](data);
+        }
+
+        // For generic documents, show only essential fields
+        return this.formatGenericDocumentTable(data);
+    }
+
+    formatGenericDocumentTable(data) {
+        const table = new Table({
+            head: [
+                chalk.cyan('ID'),
+                chalk.cyan('Schema'),
+                chalk.cyan('Data'),
+                chalk.cyan('Metadata'),
+                chalk.cyan('Created'),
+                chalk.cyan('Version')
+            ],
+            style: { head: [], border: [] }
+        });
+
+        data.forEach(doc => {
+            table.push([
+                doc.id || 'N/A',
+                doc.schema || 'N/A',
+                doc.data ? this.truncate(JSON.stringify(doc.data), 40) : 'N/A',
+                doc.metadata ? this.truncate(JSON.stringify(doc.metadata), 30) : 'N/A',
+                doc.createdAt ? this.formatDate(doc.createdAt) : 'N/A',
+                doc.versionNumber || 'N/A'
+            ]);
+        });
+
+        return table.toString();
+    }
+
     formatNoteTable(data) {
         const table = new Table({
             head: [
