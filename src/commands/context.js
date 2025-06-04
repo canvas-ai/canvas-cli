@@ -457,13 +457,15 @@ export class ContextCommand extends BaseCommand {
             return this.handleTabList(parsed);
         } else if (action === 'add') {
             return this.handleTabAdd(parsed);
+        } else if (action === 'get') {
+            return this.handleTabGet(parsed);
         } else if (action === 'delete') {
             return this.handleTabDelete(parsed);
         } else if (action === 'remove') {
             return this.handleTabRemove(parsed);
         } else {
             console.error(chalk.red(`Unknown tab action: ${action}`));
-            console.log(chalk.yellow('Available actions: list, add, delete, remove'));
+            console.log(chalk.yellow('Available actions: list, add, get, delete, remove'));
             return 1;
         }
     }
@@ -534,6 +536,33 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
+     * Get a specific tab by ID
+     */
+    async handleTabGet(parsed) {
+        const documentId = parsed.args[2];
+        if (!documentId) {
+            throw new Error('Document ID is required');
+        }
+
+        const contextId = this.getCurrentContext(parsed.options);
+
+        try {
+            const response = await this.apiClient.getDocument(contextId, documentId, 'context');
+            let document = response.payload || response.data || response;
+
+            // Extract document from nested response if needed
+            if (document && document.document) {
+                document = document.document;
+            }
+
+            this.output(document, 'document', 'tab');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to get tab: ${error.message}`);
+        }
+    }
+
+    /**
      * Delete tabs from database (permanent)
      */
     async handleTabDelete(parsed) {
@@ -567,13 +596,15 @@ export class ContextCommand extends BaseCommand {
             return this.handleNoteList(parsed);
         } else if (action === 'add') {
             return this.handleNoteAdd(parsed);
+        } else if (action === 'get') {
+            return this.handleNoteGet(parsed);
         } else if (action === 'delete') {
             return this.handleNoteDelete(parsed);
         } else if (action === 'remove') {
             return this.handleNoteRemove(parsed);
         } else {
             console.error(chalk.red(`Unknown note action: ${action}`));
-            console.log(chalk.yellow('Available actions: list, add, delete, remove'));
+            console.log(chalk.yellow('Available actions: list, add, get, delete, remove'));
             return 1;
         }
     }
@@ -644,6 +675,33 @@ export class ContextCommand extends BaseCommand {
     }
 
     /**
+     * Get a specific note by ID
+     */
+    async handleNoteGet(parsed) {
+        const documentId = parsed.args[2];
+        if (!documentId) {
+            throw new Error('Document ID is required');
+        }
+
+        const contextId = this.getCurrentContext(parsed.options);
+
+        try {
+            const response = await this.apiClient.getDocument(contextId, documentId, 'context');
+            let document = response.payload || response.data || response;
+
+            // Extract document from nested response if needed
+            if (document && document.document) {
+                document = document.document;
+            }
+
+            this.output(document, 'document', 'note');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to get note: ${error.message}`);
+        }
+    }
+
+    /**
      * Delete notes from database (permanent)
      */
     async handleNoteDelete(parsed) {
@@ -673,14 +731,43 @@ export class ContextCommand extends BaseCommand {
     async handleDocument(parsed) {
         const action = parsed.args[1] || 'list';
 
-        if (action === 'delete') {
+        if (action === 'get') {
+            return this.handleDocumentGet(parsed);
+        } else if (action === 'delete') {
             return this.handleDocumentDelete(parsed);
         } else if (action === 'remove') {
             return this.handleDocumentRemove(parsed);
         } else {
             console.error(chalk.red(`Unknown document action: ${action}`));
-            console.log(chalk.yellow('Available actions: delete, remove'));
+            console.log(chalk.yellow('Available actions: get, delete, remove'));
             return 1;
+        }
+    }
+
+    /**
+     * Get a specific document by ID
+     */
+    async handleDocumentGet(parsed) {
+        const documentId = parsed.args[2];
+        if (!documentId) {
+            throw new Error('Document ID is required');
+        }
+
+        const contextId = this.getCurrentContext(parsed.options);
+
+        try {
+            const response = await this.apiClient.getDocument(contextId, documentId, 'context');
+            let document = response.payload || response.data || response;
+
+            // Extract document from nested response if needed
+            if (document && document.document) {
+                document = document.document;
+            }
+
+            this.output(document, 'document');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to get document: ${error.message}`);
         }
     }
 
@@ -803,13 +890,16 @@ export class ContextCommand extends BaseCommand {
         console.log('  tab list              List tabs in context');
         console.log('  tabs                  List tabs in context (alias)');
         console.log('  tab add <url>         Add a tab to context');
+        console.log('  tab get <id>          Get a specific tab by ID');
         console.log('  tab delete <id...>    Delete tabs from database (permanent)');
         console.log('  tab remove <id...>    Remove tabs from context');
         console.log('  note list             List notes in context');
         console.log('  notes                 List notes in context (alias)');
         console.log('  note add <text>       Add a note to context');
+        console.log('  note get <id>         Get a specific note by ID');
         console.log('  note delete <id...>   Delete notes from database (permanent)');
         console.log('  note remove <id...>   Remove notes from context');
+        console.log('  document get <id>     Get a specific document by ID');
         console.log('  document delete <id...> Delete documents from database (permanent)');
         console.log('  document remove <id...> Remove documents from context');
         console.log();
@@ -839,9 +929,12 @@ export class ContextCommand extends BaseCommand {
         console.log('  canvas context documents');
         console.log('  canvas context tabs');
         console.log('  canvas context tab add https://example.com --title "Example Site"');
+        console.log('  canvas context tab get 12345');
         console.log('  canvas context tab delete 12345');
         console.log('  canvas context tab remove 12345 67890');
+        console.log('  canvas context note get 11111');
         console.log('  canvas context note delete 11111 22222');
+        console.log('  canvas context document get 33333');
         console.log('  canvas context document remove 33333 44444 55555');
         console.log();
         console.log(chalk.bold('Architecture:'));

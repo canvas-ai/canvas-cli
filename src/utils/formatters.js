@@ -59,7 +59,23 @@ class BaseFormatter {
         }
 
         const headers = Object.keys(data[0]);
-        const rows = data.map(item => headers.map(header => item[header] || ''));
+        const rows = data.map(item =>
+            headers.map(header => {
+                const value = item[header];
+                if (value === null || value === undefined) {
+                    return '';
+                }
+                if (typeof value === 'object') {
+                    // Serialize objects as JSON
+                    return JSON.stringify(value);
+                }
+                // Escape commas and quotes in string values
+                if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                    return `"${value.replace(/"/g, '""')}"`;
+                }
+                return String(value);
+            })
+        );
 
         return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     }
