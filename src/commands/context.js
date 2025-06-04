@@ -625,7 +625,7 @@ export class ContextCommand extends BaseCommand {
         const noteDocument = {
             schema: 'data/abstraction/note',
             data: {
-                text: noteText,
+                content: noteText,
                 title: title,
                 timestamp: new Date().toISOString()
             }
