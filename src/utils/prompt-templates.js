@@ -250,6 +250,9 @@ export class ContextFormatter {
             if (env.working_directory) {
                 info += `**Working Directory**: ${env.working_directory}\n`;
             }
+            if (env.previous_working_directory) {
+                info += `**Previous Directory**: ${env.previous_working_directory}\n`;
+            }
 
             // Key directories
             if (env.directories) {

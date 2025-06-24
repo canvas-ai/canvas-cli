@@ -312,6 +312,10 @@ export class ClientContextCollector {
         if (env.directories.desktop) features.push(`client/directories/desktop/${env.directories.desktop.replace(/\\/g, '/').replace(/^\//, '')}`);
         if (env.directories.downloads) features.push(`client/directories/downloads/${env.directories.downloads.replace(/\\/g, '/').replace(/^\//, '')}`);
 
+        // Working directory features
+        if (env.workingDir.current) features.push(`client/workdir/current/${env.workingDir.current.replace(/\\/g, '/').replace(/^\//, '')}`);
+        if (env.workingDir.previous) features.push(`client/workdir/previous/${env.workingDir.previous.replace(/\\/g, '/').replace(/^\//, '')}`);
+
         // Display features
         if (env.display.display) features.push(`client/display/${env.display.display}`);
 
@@ -350,6 +354,7 @@ export class ClientContextCollector {
                 locale: context.environment.locale.lang,
                 display: context.environment.display.display,
                 working_directory: context.environment.workingDir.current,
+                previous_working_directory: context.environment.workingDir.previous,
                 directories: {
                     desktop: context.environment.directories.desktop,
                     downloads: context.environment.directories.downloads,
@@ -371,6 +376,7 @@ export class ClientContextCollector {
             'X-Client-Machine': context.app.machineId,
             'X-Client-User': context.user.name,
             'X-Client-Timezone': context.datetime.timezone,
+            'X-Client-Timestamp': context.datetime.iso,
             'X-Client-Desktop': context.environment.desktop.currentDesktop || 'unknown',
             'X-Client-Locale': context.environment.locale.lang || 'unknown'
         };
