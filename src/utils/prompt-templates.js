@@ -206,18 +206,61 @@ export class ContextFormatter {
 
         let info = '';
 
+        // Basic client information
         if (clientContext.client) {
             const client = clientContext.client;
             info += `**Platform**: ${client.platform} (${client.architecture})\n`;
             info += `**Hostname**: ${client.hostname}\n`;
             info += `**User**: ${client.user}\n`;
+            info += `**Home Directory**: ${client.home_directory}\n`;
+            info += `**Shell**: ${client.shell}\n`;
             info += `**Timezone**: ${client.timezone}\n`;
         }
 
+        // System information
         if (clientContext.system) {
             const system = clientContext.system;
-            info += `**OS**: ${system.os_release}\n`;
-            info += `**Node.js**: ${system.node_version}\n`;
+            info += `**OS Release**: ${system.os_release}\n`;
+            info += `**Node.js Version**: ${system.node_version}\n`;
+        }
+
+        // Environment information
+        if (clientContext.environment) {
+            const env = clientContext.environment;
+
+            // Desktop environment
+            if (env.desktop_environment || env.desktop_session) {
+                info += `\n**Desktop Environment**:\n`;
+                if (env.desktop_environment) info += `- Environment: ${env.desktop_environment}\n`;
+                if (env.desktop_session) info += `- Session: ${env.desktop_session}\n`;
+                if (env.session_type) info += `- Type: ${env.session_type}\n`;
+            }
+
+            // Locale information
+            if (env.locale) {
+                info += `\n**Locale**: ${env.locale}\n`;
+            }
+
+            // Display information
+            if (env.display) {
+                info += `**Display**: ${env.display}\n`;
+            }
+
+            // Working directory
+            if (env.working_directory) {
+                info += `**Working Directory**: ${env.working_directory}\n`;
+            }
+
+            // Key directories
+            if (env.directories) {
+                const dirs = env.directories;
+                if (dirs.desktop || dirs.downloads || dirs.documents) {
+                    info += `\n**Key Directories**:\n`;
+                    if (dirs.desktop) info += `- Desktop: ${dirs.desktop}\n`;
+                    if (dirs.downloads) info += `- Downloads: ${dirs.downloads}\n`;
+                    if (dirs.documents) info += `- Documents: ${dirs.documents}\n`;
+                }
+            }
         }
 
         return info || 'Client information not available.';
