@@ -206,6 +206,10 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.setContextUrl(contextId, url);
+
+            // Handle ResponseObject format
+            const result = response.payload || response.data || response;
+
             console.log(chalk.green(`✓ Context URL set to '${url}'`));
             return 0;
         } catch (error) {
@@ -221,7 +225,11 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getContextUrl(contextId);
-            const url = response.payload?.url || response.data?.url || response.url;
+
+            // Handle ResponseObject format
+            const data = response.payload || response.data || response;
+            const url = data.url || data;
+
             console.log(url);
             return 0;
         } catch (error) {
@@ -237,7 +245,10 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getContextUrl(contextId);
-            const url = response.payload?.url || response.data?.url || response.url;
+
+            // Handle ResponseObject format
+            const data = response.payload || response.data || response;
+            const url = data.url || data;
 
             if (url && url.includes('://')) {
                 const baseUrl = url.split('://')[0];
@@ -259,7 +270,11 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getContextPath(contextId);
-            const path = response.payload?.path || response.data?.path || response.path;
+
+            // Handle ResponseObject format
+            const data = response.payload || response.data || response;
+            const path = data.path || data;
+
             console.log(path);
             return 0;
         } catch (error) {
@@ -273,6 +288,8 @@ export class ContextCommand extends BaseCommand {
     async handlePaths(parsed) {
         try {
             const response = await this.apiClient.getContexts();
+
+            // Handle ResponseObject format
             let contexts = response.payload || response.data || response;
 
             if (Array.isArray(contexts)) {
@@ -348,7 +365,10 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getContextUrl(contextId);
-            const url = response.payload?.url || response.data?.url || response.url;
+
+            // Handle ResponseObject format
+            const data = response.payload || response.data || response;
+            const url = data.url || data;
 
             if (url && url.includes('://')) {
                 const workspace = url.split('://')[0];
@@ -665,6 +685,8 @@ export class ContextCommand extends BaseCommand {
         try {
             const featureArray = ['data/abstraction/note'];
             const response = await this.apiClient.createDocument(contextId, noteDocument, 'context', featureArray);
+
+            // Handle ResponseObject format
             let result = response.payload || response.data || response;
 
             console.log(chalk.green(`✓ Note added successfully`));
@@ -687,6 +709,8 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getDocument(contextId, documentId, 'context');
+
+            // Handle ResponseObject format
             let document = response.payload || response.data || response;
 
             // Extract document from nested response if needed
@@ -757,6 +781,8 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getDocument(contextId, documentId, 'context');
+
+            // Handle ResponseObject format
             let document = response.payload || response.data || response;
 
             // Extract document from nested response if needed

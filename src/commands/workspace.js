@@ -78,10 +78,12 @@ export class WorkspaceCommand extends BaseCommand {
     /**
      * List all workspaces
      */
-        async handleList(parsed) {
+    async handleList(parsed) {
         try {
             const response = await this.apiClient.getWorkspaces();
-            const workspaces = response.payload || response.data || response;
+
+            // Handle ResponseObject format
+            let workspaces = response.payload || response.data || response;
 
             if (Array.isArray(workspaces) && workspaces.length === 0) {
                 console.log(chalk.yellow('No workspaces found'));
@@ -104,11 +106,13 @@ export class WorkspaceCommand extends BaseCommand {
             throw new Error('Workspace ID is required');
         }
 
-                                        try {
+        try {
             const response = await this.apiClient.getWorkspace(workspaceId);
-            let workspace = response.workspace || response.payload || response.data || response;
 
-            // If workspace is still nested, extract it
+            // Handle ResponseObject format
+            let workspace = response.payload || response.data || response;
+
+            // Extract workspace from nested response if needed
             if (workspace && workspace.workspace) {
                 workspace = workspace.workspace;
             }
@@ -121,7 +125,7 @@ export class WorkspaceCommand extends BaseCommand {
     }
 
     /**
-     * Create a new workspace
+     * Create new workspace
      */
     async handleCreate(parsed) {
         const name = parsed.args[1];
@@ -131,15 +135,20 @@ export class WorkspaceCommand extends BaseCommand {
 
         const workspaceData = {
             name: name,
+            label: parsed.options.label || name,
             description: parsed.options.description || '',
-            settings: {}
+            type: parsed.options.type || 'workspace',
+            color: parsed.options.color,
+            metadata: parsed.options.metadata ? JSON.parse(parsed.options.metadata) : {}
         };
 
-                try {
+        try {
             const response = await this.apiClient.createWorkspace(workspaceData);
+
+            // Handle ResponseObject format
             const workspace = response.payload || response.data || response;
 
-            console.log(chalk.green(`✓ Workspace '${workspace.label || workspace.name}' created successfully`));
+            console.log(chalk.green(`✓ Workspace '${name}' created successfully`));
             this.output(workspace, 'workspace');
             return 0;
         } catch (error) {
@@ -157,18 +166,22 @@ export class WorkspaceCommand extends BaseCommand {
         }
 
         const updateData = {};
-        if (parsed.options.name) updateData.name = parsed.options.name;
+        if (parsed.options.label) updateData.label = parsed.options.label;
         if (parsed.options.description) updateData.description = parsed.options.description;
+        if (parsed.options.color) updateData.color = parsed.options.color;
+        if (parsed.options.metadata) updateData.metadata = JSON.parse(parsed.options.metadata);
 
         if (Object.keys(updateData).length === 0) {
-            throw new Error('No update data provided. Use --name or --description');
+            throw new Error('No update data provided. Use --label, --description, --color, or --metadata');
         }
 
-                try {
+        try {
             const response = await this.apiClient.updateWorkspace(workspaceId, updateData);
+
+            // Handle ResponseObject format
             const workspace = response.payload || response.data || response;
 
-            console.log(chalk.green(`✓ Workspace '${workspace.label || workspace.name}' updated successfully`));
+            console.log(chalk.green(`✓ Workspace '${workspaceId}' updated successfully`));
             this.output(workspace, 'workspace');
             return 0;
         } catch (error) {
@@ -211,9 +224,11 @@ export class WorkspaceCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.startWorkspace(workspaceId);
+
+            // Handle ResponseObject format
             const workspace = response.payload || response.data || response;
 
-            console.log(chalk.green(`✓ Workspace '${workspace.label || workspace.name || workspaceId}' started successfully`));
+            console.log(chalk.green(`✓ Workspace '${workspaceId}' started successfully`));
             this.output(workspace, 'workspace');
             return 0;
         } catch (error) {
@@ -233,10 +248,82 @@ export class WorkspaceCommand extends BaseCommand {
         try {
             const response = await this.apiClient.stopWorkspace(workspaceId);
 
+            // Handle ResponseObject format
+            const result = response.payload || response.data || response;
+
             console.log(chalk.green(`✓ Workspace '${workspaceId}' stopped successfully`));
             return 0;
         } catch (error) {
             throw new Error(`Failed to stop workspace: ${error.message}`);
+        }
+    }
+
+    /**
+     * Open workspace
+     */
+    async handleOpen(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const response = await this.apiClient.openWorkspace(workspaceId);
+
+            // Handle ResponseObject format
+            const workspace = response.payload || response.data || response;
+
+            console.log(chalk.green(`✓ Workspace '${workspaceId}' opened successfully`));
+            this.output(workspace, 'workspace');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to open workspace: ${error.message}`);
+        }
+    }
+
+    /**
+     * Close workspace
+     */
+    async handleClose(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const response = await this.apiClient.closeWorkspace(workspaceId);
+
+            // Handle ResponseObject format
+            const workspace = response.payload || response.data || response;
+
+            console.log(chalk.green(`✓ Workspace '${workspaceId}' closed successfully`));
+            this.output(workspace, 'workspace');
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to close workspace: ${error.message}`);
+        }
+    }
+
+    /**
+     * Show workspace status
+     */
+    async handleStatus(parsed) {
+        const workspaceId = parsed.args[1];
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        try {
+            const response = await this.apiClient.getWorkspaceStatus(workspaceId);
+
+            // Handle ResponseObject format
+            const statusData = response.payload || response.data || response;
+
+            console.log(chalk.bold(`Workspace Status: ${workspaceId}`));
+            console.log(`Status: ${statusData.status}`);
+            return 0;
+        } catch (error) {
+            throw new Error(`Failed to get workspace status: ${error.message}`);
         }
     }
 
@@ -252,9 +339,8 @@ export class WorkspaceCommand extends BaseCommand {
         try {
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace');
 
-            // Fix: Extract documents from ResponseObject format
-            // The actual documents array is at response.payload.data
-            let documents = response.payload?.data || response.payload || response.data || [];
+            // Handle ResponseObject format
+            let documents = response.payload || response.data || response;
 
             if (Array.isArray(documents) && documents.length === 0) {
                 console.log(chalk.yellow('No documents found in this workspace'));
@@ -282,9 +368,9 @@ export class WorkspaceCommand extends BaseCommand {
                 featureArray: ['data/abstraction/tab']
             };
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
-            // Fix: Extract tabs from ResponseObject format
-            // The actual tabs array is at response.payload.data
-            let tabs = response.payload?.data || response.payload || response.data || [];
+
+            // Handle ResponseObject format
+            let tabs = response.payload || response.data || response;
 
             if (Array.isArray(tabs) && tabs.length === 0) {
                 console.log(chalk.yellow('No tabs found in this workspace'));
@@ -299,10 +385,19 @@ export class WorkspaceCommand extends BaseCommand {
     }
 
     /**
-     * List documents in workspace (alias for handleDocuments)
+     * Handle document commands
      */
     async handleDocument(parsed) {
-        return this.handleDocuments(parsed);
+        const action = parsed.args[1] || 'list';
+        const workspaceId = parsed.args[2];
+
+        if (!workspaceId) {
+            throw new Error('Workspace ID is required');
+        }
+
+        // Redirect to appropriate handler based on action
+        // Implementation would be similar to context document handling
+        throw new Error('Document operations not yet implemented for workspace command');
     }
 
     /**
@@ -319,9 +414,9 @@ export class WorkspaceCommand extends BaseCommand {
                 featureArray: ['data/abstraction/note']
             };
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
-            // Fix: Extract notes from ResponseObject format
-            // The actual notes array is at response.payload.data
-            let notes = response.payload?.data || response.payload || response.data || [];
+
+            // Handle ResponseObject format
+            let notes = response.payload || response.data || response;
 
             if (Array.isArray(notes) && notes.length === 0) {
                 console.log(chalk.yellow('No notes found in this workspace'));
@@ -346,6 +441,8 @@ export class WorkspaceCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getWorkspaceTree(workspaceId);
+
+            // Handle ResponseObject format
             let tree = response.payload || response.data || response;
 
             if (!tree || !tree.children) {
@@ -363,7 +460,7 @@ export class WorkspaceCommand extends BaseCommand {
     }
 
     /**
-     * Display a tree node recursively (borrowed from context command)
+     * Display a tree node recursively
      */
     displayTreeNode(node, prefix = '', isLast = true) {
         if (!node) return;
@@ -394,7 +491,6 @@ export class WorkspaceCommand extends BaseCommand {
      */
     showHelp() {
         console.log(chalk.bold('Workspace Commands:'));
-        console.log('  (no args)             List all workspaces (default)');
         console.log('  list                  List all workspaces');
         console.log('  show <id>             Show workspace details');
         console.log('  create <name>         Create new workspace');
@@ -402,45 +498,30 @@ export class WorkspaceCommand extends BaseCommand {
         console.log('  delete <id>           Delete workspace');
         console.log('  start <id>            Start workspace');
         console.log('  stop <id>             Stop workspace');
-        console.log();
-        console.log(chalk.bold('Workspace-specific Commands:'));
-        console.log('  <id>                  Show workspace details (shorthand)');
-        console.log('  <id> tree             Show workspace tree');
-        console.log('  <id> documents        List all documents in workspace');
-        console.log('  <id> document         List all documents in workspace (alias)');
-        console.log('  <id> tabs             List tabs in workspace');
-        console.log('  <id> notes            List notes in workspace');
-        console.log();
-        console.log(chalk.bold('Legacy Commands (still supported):'));
-        console.log('  documents <id>        List all documents in workspace');
+        console.log('  open <id>             Open workspace');
+        console.log('  close <id>            Close workspace');
+        console.log('  status <id>           Show workspace status');
+        console.log('  documents <id>        List documents in workspace');
         console.log('  tabs <id>             List tabs in workspace');
         console.log('  notes <id>            List notes in workspace');
         console.log('  tree <id>             Show workspace tree');
         console.log();
         console.log(chalk.bold('Options:'));
-        console.log('  --name <name>         Workspace name (for update)');
+        console.log('  --label <label>       Workspace label');
         console.log('  --description <desc>  Workspace description');
+        console.log('  --color <color>       Workspace color (hex)');
+        console.log('  --type <type>         Workspace type (workspace, universe)');
+        console.log('  --metadata <json>     Workspace metadata (JSON string)');
         console.log('  --force               Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
-        console.log('  canvas ws                         # List all workspaces');
-        console.log('  canvas ws universe                # Show universe workspace');
-        console.log('  canvas ws universe tree           # Show universe tree');
-        console.log('  canvas ws universe documents      # List documents');
-        console.log('  canvas ws universe notes          # List notes');
-        console.log('  canvas ws universe tabs           # List tabs');
-        console.log();
         console.log('  canvas workspace list');
-        console.log('  canvas workspace create "My Project"');
+        console.log('  canvas workspace show universe');
+        console.log('  canvas workspace create my-workspace --description "My workspace"');
         console.log('  canvas workspace start universe');
-        console.log('  canvas workspace stop universe');
-        console.log('  canvas workspace delete test1 --force');
-        console.log();
-        console.log(chalk.cyan('Architecture:'));
-        console.log('  • Every user has a main workspace called "universe" (their home)');
-        console.log('  • Contexts belong to workspaces and reference them by workspaceId');
-        console.log('  • Use context commands to work within specific workspace contexts');
-        console.log('  • Start/stop controls workspace lifecycle and resource allocation');
+        console.log('  canvas workspace documents universe');
+        console.log('  canvas workspace tree universe');
+        console.log('  canvas workspace delete old-workspace --force');
     }
 }
 

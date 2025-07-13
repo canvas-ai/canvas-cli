@@ -21,11 +21,11 @@ export class AuthCommand extends BaseCommand {
      * Login to Canvas server
      */
     async handleLogin(parsed) {
-        const username = parsed.args[1] || parsed.options.username;
+        const email = parsed.args[1] || parsed.options.username || parsed.options.email;
         const password = parsed.options.password;
 
-        if (!username) {
-            throw new Error('Username is required');
+        if (!email) {
+            throw new Error('Email is required');
         }
 
         if (!password) {
@@ -33,14 +33,17 @@ export class AuthCommand extends BaseCommand {
         }
 
         try {
-            const response = await this.apiClient.login({ username, password });
-            const { token, user } = response.data || response;
+            const response = await this.apiClient.login({ email, password });
+
+            // Handle ResponseObject format
+            const responseData = response.payload || response.data || response;
+            const { token, user } = responseData;
 
             // Store token in config
             this.config.set('server.auth.token', token);
             this.config.set('server.auth.type', 'jwt');
 
-            console.log(chalk.green(`✓ Successfully logged in as ${user.username}`));
+            console.log(chalk.green(`✓ Successfully logged in as ${user.name || user.email}`));
             console.log(chalk.gray(`Token stored in config: ${this.config.path}`));
             return 0;
         } catch (error) {
@@ -74,14 +77,21 @@ export class AuthCommand extends BaseCommand {
     async handleProfile(parsed) {
         try {
             const response = await this.apiClient.getProfile();
-            const profile = response.data || response;
+
+            // Handle ResponseObject format
+            const profile = response.payload || response.data || response;
 
             console.log(chalk.bold('Current User Profile:'));
-            console.log(`Username: ${profile.username}`);
+            console.log(`Name: ${profile.name || 'N/A'}`);
             console.log(`Email: ${profile.email}`);
-            console.log(`Role: ${profile.role}`);
-            console.log(`Created: ${new Date(profile.createdAt).toLocaleString()}`);
-            console.log(`Last Login: ${new Date(profile.lastLoginAt).toLocaleString()}`);
+            console.log(`User Type: ${profile.userType || 'user'}`);
+            console.log(`Status: ${profile.status || 'active'}`);
+            if (profile.createdAt) {
+                console.log(`Created: ${new Date(profile.createdAt).toLocaleString()}`);
+            }
+            if (profile.lastLoginAt) {
+                console.log(`Last Login: ${new Date(profile.lastLoginAt).toLocaleString()}`);
+            }
 
             return 0;
         } catch (error) {
@@ -95,7 +105,9 @@ export class AuthCommand extends BaseCommand {
     async handleTokens(parsed) {
         try {
             const response = await this.apiClient.getApiTokens();
-            const tokens = response.data || response;
+
+            // Handle ResponseObject format
+            const tokens = response.payload || response.data || response;
 
             if (Array.isArray(tokens) && tokens.length === 0) {
                 console.log(chalk.yellow('No API tokens found'));
@@ -120,13 +132,14 @@ export class AuthCommand extends BaseCommand {
 
         const tokenData = {
             name: name,
-            description: parsed.options.description || '',
-            expiresAt: parsed.options.expires ? new Date(parsed.options.expires).toISOString() : null
+            description: parsed.options.description || ''
         };
 
         try {
             const response = await this.apiClient.createApiToken(tokenData);
-            const token = response.data || response;
+
+            // Handle ResponseObject format
+            const token = response.payload || response.data || response;
 
             console.log(chalk.green(`✓ API token '${token.name}' created successfully`));
             console.log(chalk.bold('Token:'), chalk.yellow(token.token));
@@ -222,8 +235,8 @@ export class AuthCommand extends BaseCommand {
                 if (authType === 'jwt') {
                     try {
                         const response = await this.apiClient.getProfile();
-                        const profile = response.data || response;
-                        console.log(`User: ${profile.username} (${profile.email})`);
+                        const profile = response.payload || response.data || response;
+                        console.log(`User: ${profile.name || profile.email} (${profile.email})`);
                     } catch (error) {
                         console.log(`User: ${chalk.yellow('Unable to fetch profile')}`);
                     }
@@ -255,7 +268,7 @@ export class AuthCommand extends BaseCommand {
      */
     showHelp() {
         console.log(chalk.bold('Auth Commands:'));
-        console.log('  login <username>      Login with username/password');
+        console.log('  login <email>         Login with email/password');
         console.log('  logout                Logout and clear token');
         console.log('  profile               Show current user profile');
         console.log('  status                Show authentication status');
@@ -265,16 +278,16 @@ export class AuthCommand extends BaseCommand {
         console.log('  set-token <token>     Set API token manually');
         console.log();
         console.log(chalk.bold('Options:'));
-        console.log('  --username <user>     Username for login');
+        console.log('  --email <email>       Email for login');
+        console.log('  --username <email>    Email for login (alias)');
         console.log('  --password <pass>     Password for login');
         console.log('  --name <name>         Token name');
         console.log('  --description <desc>  Token description');
-        console.log('  --expires <date>      Token expiration date');
         console.log('  --save                Save new token to config');
         console.log('  --force               Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
-        console.log('  canvas auth login john.doe --password mypassword');
+        console.log('  canvas auth login admin@canvas.local --password mypassword');
         console.log('  canvas auth create-token "CLI Access" --save');
         console.log('  canvas auth set-token canvas-abc123...');
         console.log('  canvas auth status');

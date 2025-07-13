@@ -19,25 +19,41 @@ export class CanvasApiClient {
             baseURL: this.baseURL,
             timeout: 30000,
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'User-Agent': 'canvas-cli/1.0.0'
             }
         });
 
-        // Add request interceptor for authentication
+        // Add request interceptor for authentication and content-type
         this.client.interceptors.request.use((config) => {
             if (this.token) {
                 config.headers.Authorization = `Bearer ${this.token}`;
             }
+
+            // Set content-type for POST/PUT/PATCH requests (whether they have data or not)
+            if (config.method === 'post' || config.method === 'put' || config.method === 'patch') {
+                config.headers['Content-Type'] = 'application/json';
+            }
+
             debug('Request:', config.method?.toUpperCase(), config.url);
             return config;
         });
 
-        // Add response interceptor for error handling
+        // Add response interceptor for error handling and ResponseObject format
         this.client.interceptors.response.use(
             (response) => {
                 debug('Response:', response.status, response.config.url);
+
+                // Handle ResponseObject format
+                if (response.data && typeof response.data === 'object') {
+                    const { status, statusCode, message, payload, count } = response.data;
+
+                    // If it's a ResponseObject, return it as-is for CLI to handle
+                    if (status && statusCode && message !== undefined) {
+                        return response;
+                    }
+                }
+
                 return response;
             },
             (error) => {
@@ -53,6 +69,13 @@ export class CanvasApiClient {
     formatError(error) {
         if (error.response) {
             const { status, data } = error.response;
+
+            // Handle ResponseObject error format
+            if (data && data.status === 'error' && data.message) {
+                return new Error(`API Error (${status}): ${data.message}`);
+            }
+
+            // Fallback to generic error handling
             const message = data?.message || data?.error || `HTTP ${status}`;
             return new Error(`API Error (${status}): ${message}`);
         } else if (error.request) {
@@ -79,7 +102,7 @@ export class CanvasApiClient {
     }
 
     async updateWorkspace(workspaceId, workspaceData) {
-        const response = await this.client.put(`/workspaces/${workspaceId}`, workspaceData);
+        const response = await this.client.patch(`/workspaces/${workspaceId}`, workspaceData);
         return response.data;
     }
 
@@ -89,12 +112,27 @@ export class CanvasApiClient {
     }
 
     async startWorkspace(workspaceId) {
-        const response = await this.client.post(`/workspaces/${workspaceId}/start`, { action: 'start' });
+        const response = await this.client.post(`/workspaces/${workspaceId}/start`);
         return response.data;
     }
 
     async stopWorkspace(workspaceId) {
-        const response = await this.client.post(`/workspaces/${workspaceId}/stop`, { action: 'stop' });
+        const response = await this.client.post(`/workspaces/${workspaceId}/stop`);
+        return response.data;
+    }
+
+    async openWorkspace(workspaceId) {
+        const response = await this.client.post(`/workspaces/${workspaceId}/open`);
+        return response.data;
+    }
+
+    async closeWorkspace(workspaceId) {
+        const response = await this.client.post(`/workspaces/${workspaceId}/close`);
+        return response.data;
+    }
+
+    async getWorkspaceStatus(workspaceId) {
+        const response = await this.client.get(`/workspaces/${workspaceId}/status`);
         return response.data;
     }
 
@@ -165,9 +203,12 @@ export class CanvasApiClient {
         if (options.featureArray && Array.isArray(options.featureArray)) {
             options.featureArray.forEach(feature => params.append('featureArray', feature));
         }
-        if (options.schema) params.append('schema', options.schema);
+        if (options.filterArray && Array.isArray(options.filterArray)) {
+            options.filterArray.forEach(filter => params.append('filterArray', filter));
+        }
+        if (options.includeServerContext) params.append('includeServerContext', 'true');
+        if (options.includeClientContext) params.append('includeClientContext', 'true');
         if (options.limit) params.append('limit', options.limit);
-        if (options.offset) params.append('offset', options.offset);
 
         const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
         const url = `${baseUrl}/documents${params.toString() ? '?' + params.toString() : ''}`;
@@ -177,7 +218,7 @@ export class CanvasApiClient {
 
     async getDocument(containerId, documentId, containerType = 'context') {
         const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
-        const response = await this.client.get(`${baseUrl}/documents/${documentId}`);
+        const response = await this.client.get(`${baseUrl}/documents/by-id/${documentId}`);
         return response.data;
     }
 
@@ -191,7 +232,7 @@ export class CanvasApiClient {
         }
 
         const payload = {
-            documents: documentData,
+            documents: Array.isArray(documentData) ? documentData : [documentData],
             featureArray: enhancedFeatureArray
         };
         const response = await this.client.post(`${baseUrl}/documents`, payload);
@@ -200,23 +241,16 @@ export class CanvasApiClient {
 
     async updateDocument(containerId, documentId, documentData, containerType = 'context') {
         const baseUrl = containerType === 'context' ? `/contexts/${containerId}` : `/workspaces/${containerId}`;
-        const response = await this.client.put(`${baseUrl}/documents/${documentId}`, documentData);
+        const documents = Array.isArray(documentData) ? documentData : [{ id: documentId, ...documentData }];
+        const response = await this.client.put(`${baseUrl}/documents`, { documents });
         return response.data;
     }
 
     async deleteDocument(containerId, documentId, containerType = 'context') {
-        // Fix: containerType should only determine route (context vs workspace), not operation type
         const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
-
-        // Operation type should be determined by method name, not containerType
-        // For context routes: root = database deletion, /remove = context removal
-        // For workspace routes: root = database deletion, /remove = workspace removal
-        const endpoint = `${baseUrl}/documents`; // Always use root endpoint for database deletion
-
-        // Always send as array since backend now requires arrays
+        const endpoint = `${baseUrl}/documents`;
         const documentIdArray = [documentId];
 
-        // Use axios.delete directly with data parameter
         const response = await this.client.delete(endpoint, {
             data: documentIdArray
         });
@@ -224,24 +258,18 @@ export class CanvasApiClient {
     }
 
     async deleteDocuments(containerId, documentIds, containerType = 'context') {
-        // Fix: containerType should only determine route (context vs workspace), not operation type
         const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
-
-        // Always use root endpoint for database deletion
         const endpoint = `${baseUrl}/documents`;
 
-        // Use axios.delete directly with data parameter
         const response = await this.client.delete(endpoint, {
             data: documentIds
         });
         return response.data;
     }
 
-    // Test method using WebSocket instead of REST for delete operations
     async deleteDocumentViaWebSocket(containerId, documentId, containerType = 'context') {
-        // This is a temporary test method - in production we'd need proper WebSocket client setup
-        console.log(`Would delete document ${documentId} from ${containerId} via WebSocket (${containerType})`);
-        return { success: true, method: 'websocket', documentId, containerId, containerType };
+        // This method would typically use WebSocket, but for now we'll use REST
+        return this.deleteDocument(containerId, documentId, containerType);
     }
 
     // Schema API methods
@@ -262,17 +290,23 @@ export class CanvasApiClient {
 
     // Auth API methods
     async login(credentials) {
-        const response = await this.client.post('/auth/login', credentials);
+        // Update to use email instead of username and match new API structure
+        const loginData = {
+            email: credentials.username || credentials.email,
+            password: credentials.password,
+            strategy: credentials.strategy || 'auto'
+        };
+        const response = await this.client.post('/auth/login', loginData);
         return response.data;
     }
 
     async logout() {
-        const response = await this.client.post('/auth/logout', { action: 'logout' });
+        const response = await this.client.post('/auth/logout');
         return response.data;
     }
 
     async getProfile() {
-        const response = await this.client.get('/auth/profile');
+        const response = await this.client.get('/auth/me');
         return response.data;
     }
 
@@ -293,21 +327,15 @@ export class CanvasApiClient {
 
     // Health check
     async ping() {
-        const response = await this.client.get('/ping');
+        const response = await this.client.get('/rest/v2/ping');
         return response.data;
     }
 
     async removeDocument(containerId, documentId, containerType = 'context') {
-        // Fix: containerType should only determine route (context vs workspace), not operation type
         const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
-
-        // Use /remove endpoint for removal operations (remove from context/workspace)
         const endpoint = `${baseUrl}/documents/remove`;
-
-        // Always send as array since backend now requires arrays
         const documentIdArray = [documentId];
 
-        // Use axios.delete directly with data parameter
         const response = await this.client.delete(endpoint, {
             data: documentIdArray
         });
@@ -315,13 +343,9 @@ export class CanvasApiClient {
     }
 
     async removeDocuments(containerId, documentIds, containerType = 'context') {
-        // Fix: containerType should only determine route (context vs workspace), not operation type
         const baseUrl = containerType === 'workspace' ? `/workspaces/${containerId}` : `/contexts/${containerId}`;
-
-        // Use /remove endpoint for removal operations (remove from context/workspace)
         const endpoint = `${baseUrl}/documents/remove`;
 
-        // Use axios.delete directly with data parameter
         const response = await this.client.delete(endpoint, {
             data: documentIds
         });
