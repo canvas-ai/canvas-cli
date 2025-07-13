@@ -129,7 +129,6 @@ export class WorkspaceFormatter extends BaseFormatter {
 
         const table = new Table({
             head: [
-                chalk.cyan('ID'),
                 chalk.cyan('Name'),
                 chalk.cyan('Owner'),
                 chalk.cyan('Color'),
@@ -143,9 +142,8 @@ export class WorkspaceFormatter extends BaseFormatter {
         data.forEach(workspace => {
             if (workspace) {
                 table.push([
-                    workspace.id || 'N/A',
                     workspace.label || workspace.name || 'N/A',
-                    this.truncate(workspace.owner, 20),
+                    this.truncate(workspace.ownerEmail || workspace.owner, 20),
                     this.formatColor(workspace.color),
                     this.truncate(workspace.description, 25),
                     this.formatDate(workspace.created || workspace.createdAt),
@@ -168,7 +166,7 @@ export class WorkspaceFormatter extends BaseFormatter {
 
         // Basic information
         table.push([chalk.cyan('ID'), workspace.id || 'N/A']);
-        table.push([chalk.cyan('Owner'), workspace.owner || 'N/A']);
+        table.push([chalk.cyan('Owner'), workspace.ownerEmail || workspace.owner || 'N/A']);
         table.push([chalk.cyan('Type'), workspace.type || 'N/A']);
         table.push([chalk.cyan('Label'), workspace.label || 'N/A']);
         table.push([chalk.cyan('Color'), this.formatColor(workspace.color)]);
@@ -285,7 +283,7 @@ export class ContextFormatter extends BaseFormatter {
 
         const table = new Table({
             head: [
-                chalk.cyan('ID'),
+                chalk.cyan('Name'),
                 chalk.cyan('URL'),
                 chalk.cyan('BaseUrl'),
                 chalk.cyan('Owner'),
@@ -295,7 +293,7 @@ export class ContextFormatter extends BaseFormatter {
         });
 
         data.forEach(context => {
-            const owner = context.userId || 'N/A';
+            const owner = context.ownerEmail || context.userId || 'N/A';
             const locked = context.locked ? chalk.red('Yes') : chalk.green('No');
             const contextId = this.formatContextId(context.id, context.color);
 
@@ -322,7 +320,7 @@ export class ContextFormatter extends BaseFormatter {
 
         // Basic information
         table.push([chalk.cyan('ID'), context.id || 'N/A']);
-        table.push([chalk.cyan('User ID'), context.userId || 'N/A']);
+        table.push([chalk.cyan('Owner'), context.ownerEmail || context.userId || 'N/A']);
         table.push([chalk.cyan('URL'), context.url || 'N/A']);
         table.push([chalk.cyan('Base URL'), context.baseUrl || 'N/A']);
         table.push([chalk.cyan('Path'), context.path || 'N/A']);
