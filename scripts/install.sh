@@ -32,7 +32,19 @@ choose_install_location() {
     echo "  2) Global install (/usr/local/bin) - Requires sudo"
     echo
     printf "Enter your choice (1-2): "
-    read -r choice
+
+    # Use /dev/tty to read from terminal when piped via curl | bash
+    if [[ -t 0 ]]; then
+        # stdin is a terminal, can read normally
+        read -r choice
+    elif [[ -r /dev/tty ]]; then
+        # stdin is piped, but we can read from terminal
+        read -r choice < /dev/tty
+    else
+        # No terminal available (CI environment), use default
+        choice=""
+        warning "No terminal available for input, using default"
+    fi
 
     case "$choice" in
         1|"")
