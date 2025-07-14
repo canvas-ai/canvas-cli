@@ -145,7 +145,7 @@ install_canvas() {
 
     # Install
     log "Installing binary..."
-    if ! mv "$binary_path" "$INSTALL_DIR/$BINARY_NAME"; then
+    if ! mv -f "$binary_path" "$INSTALL_DIR/$BINARY_NAME"; then
         error "Failed to install binary to: $INSTALL_DIR/$BINARY_NAME"
     fi
 
