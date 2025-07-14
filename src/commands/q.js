@@ -16,7 +16,7 @@ export class QCommand extends BaseCommand {
         this.promptRenderer = new PromptRenderer();
     }
 
-        async execute(parsed) {
+    async execute(parsed) {
         try {
             this.options = parsed.options;
 
@@ -105,7 +105,7 @@ export class QCommand extends BaseCommand {
         this.debug('Generated prompt length:', prompt.length);
         this.debug('Using template:', templateName);
 
-                // Show prompt if requested
+        // Show prompt if requested
         if (this.options['show-prompt'] || this.options['show-prompt-only']) {
             console.log(chalk.bold.yellow('📝 Rendered Prompt:'));
             console.log(chalk.gray('─'.repeat(80)));

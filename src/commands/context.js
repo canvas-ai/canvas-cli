@@ -12,7 +12,7 @@ export class ContextCommand extends BaseCommand {
         this.options = null;
     }
 
-        async execute(parsed) {
+    async execute(parsed) {
         try {
             this.options = parsed.options;
 
@@ -54,7 +54,7 @@ export class ContextCommand extends BaseCommand {
     async handleList(parsed) {
         try {
             const response = await this.apiClient.getContexts();
-            let contexts = response.payload || response.data || response;
+            const contexts = response.payload || response.data || response;
 
             if (Array.isArray(contexts) && contexts.length === 0) {
                 console.log(chalk.yellow('No contexts found'));
@@ -290,7 +290,7 @@ export class ContextCommand extends BaseCommand {
             const response = await this.apiClient.getContexts();
 
             // Handle ResponseObject format
-            let contexts = response.payload || response.data || response;
+            const contexts = response.payload || response.data || response;
 
             if (Array.isArray(contexts)) {
                 contexts.forEach(context => {
@@ -314,7 +314,7 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getContextTree(contextId);
-            let tree = response.payload || response.data || response;
+            const tree = response.payload || response.data || response;
 
             if (!tree || !tree.children) {
                 console.log(chalk.yellow('No tree structure found for this context'));
@@ -453,7 +453,7 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const response = await this.apiClient.getDocuments(contextId, 'context');
-            let documents = response.payload || response.data || response;
+            const documents = response.payload || response.data || response;
 
             if (Array.isArray(documents) && documents.length === 0) {
                 console.log(chalk.yellow('No documents found in this context'));
@@ -508,7 +508,7 @@ export class ContextCommand extends BaseCommand {
                 featureArray: ['data/abstraction/tab']
             };
             const response = await this.apiClient.getDocuments(contextId, 'context', options);
-            let tabs = response.payload || response.data || response;
+            const tabs = response.payload || response.data || response;
 
             if (Array.isArray(tabs) && tabs.length === 0) {
                 console.log(chalk.yellow('No tabs found in this context'));
@@ -546,7 +546,7 @@ export class ContextCommand extends BaseCommand {
         try {
             const featureArray = ['data/abstraction/tab'];
             const response = await this.apiClient.createDocument(contextId, tabDocument, 'context', featureArray);
-            let result = response.payload || response.data || response;
+            const result = response.payload || response.data || response;
 
             console.log(chalk.green(`✓ Tab added successfully`));
             return 0;
@@ -647,7 +647,7 @@ export class ContextCommand extends BaseCommand {
                 featureArray: ['data/abstraction/note']
             };
             const response = await this.apiClient.getDocuments(contextId, 'context', options);
-            let notes = response.payload || response.data || response;
+            const notes = response.payload || response.data || response;
 
             if (Array.isArray(notes) && notes.length === 0) {
                 console.log(chalk.yellow('No notes found in this context'));
@@ -687,7 +687,7 @@ export class ContextCommand extends BaseCommand {
             const response = await this.apiClient.createDocument(contextId, noteDocument, 'context', featureArray);
 
             // Handle ResponseObject format
-            let result = response.payload || response.data || response;
+            const result = response.payload || response.data || response;
 
             console.log(chalk.green(`✓ Note added successfully`));
             return 0;

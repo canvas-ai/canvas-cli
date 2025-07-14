@@ -54,7 +54,7 @@ export class ServerCommand extends BaseCommand {
     /**
      * Check if a directory is a valid Canvas server root
      */
-        isValidServerRoot(dir) {
+    isValidServerRoot(dir) {
         try {
             const packageJsonPath = path.join(dir, 'package.json');
             const srcServerPath = path.join(dir, 'src/Server.js');
@@ -192,7 +192,7 @@ export class ServerCommand extends BaseCommand {
             };
 
             // Start with PM2
-            await execAsync(`pm2 start '${JSON.stringify(pm2Config).replace(/'/g, "\\'")}'`);
+            await execAsync(`pm2 start '${JSON.stringify(pm2Config).replace(/'/g, '\\\'')}'`);
 
             console.log(chalk.green('✓ Canvas server started successfully'));
 

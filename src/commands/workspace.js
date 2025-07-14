@@ -83,7 +83,7 @@ export class WorkspaceCommand extends BaseCommand {
             const response = await this.apiClient.getWorkspaces();
 
             // Handle ResponseObject format
-            let workspaces = response.payload || response.data || response;
+            const workspaces = response.payload || response.data || response;
 
             if (Array.isArray(workspaces) && workspaces.length === 0) {
                 console.log(chalk.yellow('No workspaces found'));
@@ -340,7 +340,7 @@ export class WorkspaceCommand extends BaseCommand {
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace');
 
             // Handle ResponseObject format
-            let documents = response.payload || response.data || response;
+            const documents = response.payload || response.data || response;
 
             if (Array.isArray(documents) && documents.length === 0) {
                 console.log(chalk.yellow('No documents found in this workspace'));
@@ -370,7 +370,7 @@ export class WorkspaceCommand extends BaseCommand {
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
 
             // Handle ResponseObject format
-            let tabs = response.payload || response.data || response;
+            const tabs = response.payload || response.data || response;
 
             if (Array.isArray(tabs) && tabs.length === 0) {
                 console.log(chalk.yellow('No tabs found in this workspace'));
@@ -416,7 +416,7 @@ export class WorkspaceCommand extends BaseCommand {
             const response = await this.apiClient.getDocuments(workspaceId, 'workspace', options);
 
             // Handle ResponseObject format
-            let notes = response.payload || response.data || response;
+            const notes = response.payload || response.data || response;
 
             if (Array.isArray(notes) && notes.length === 0) {
                 console.log(chalk.yellow('No notes found in this workspace'));
@@ -443,7 +443,7 @@ export class WorkspaceCommand extends BaseCommand {
             const response = await this.apiClient.getWorkspaceTree(workspaceId);
 
             // Handle ResponseObject format
-            let tree = response.payload || response.data || response;
+            const tree = response.payload || response.data || response;
 
             if (!tree || !tree.children) {
                 console.log(chalk.yellow('No tree structure found for this workspace'));

@@ -81,7 +81,7 @@ const DEFAULT_CONFIG = {
         priority: ['anthropic', 'openai', 'ollama'],
         contextTemplate: 'canvas-assistant',
     }
-}
+};
 
 const CLIENT_CONTEXT_ARRAY = generateClientContextArray();
 
@@ -89,7 +89,7 @@ const EXIT_CODES = {
     ERROR: 87, // https://xkcd.com/221/
     FAILED: 1,
     SUCCESS: 0,
-}
+};
 
 const config = new Conf({
     projectName: 'canvas',

@@ -11,7 +11,7 @@ const workspaceArgs = ['workspace', ...args];
 
 // Call main with the prefixed arguments
 main(workspaceArgs).then(process.exit).catch(error => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exit(1);
 });
 

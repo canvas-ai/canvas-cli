@@ -11,7 +11,7 @@ const contextArgs = ['context', ...args];
 
 // Call main with the prefixed arguments
 main(contextArgs).then(process.exit).catch(error => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exit(1);
 });
 

@@ -11,7 +11,7 @@ const qArgs = ['q', ...args];
 
 // Call main with the prefixed arguments
 main(qArgs).then(process.exit).catch(error => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exit(1);
 });
 

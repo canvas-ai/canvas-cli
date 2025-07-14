@@ -211,7 +211,7 @@ export class WorkspaceFormatter extends BaseFormatter {
             not_found: chalk.red,
             removed: chalk.red,
             destroyed: chalk.red,
-        }
+        };
 
         if (!status) return 'N/A';
 
@@ -223,7 +223,7 @@ export class WorkspaceFormatter extends BaseFormatter {
         return status;
     }
 
-        /**
+    /**
      * Format color field with the actual color styling
      */
     formatColor(colorValue) {
@@ -377,7 +377,7 @@ export class ContextFormatter extends BaseFormatter {
             table.push([chalk.cyan('Pending URL'), context.pendingUrl]);
         }
 
-                return table.toString();
+        return table.toString();
     }
 
     /**
