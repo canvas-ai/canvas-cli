@@ -47,10 +47,10 @@ jobs:
         bun-version: latest
 
     - name: Install dependencies
-      run: npm ci
+      run: bun install
 
     - name: Build development binary
-      run: npm run build:dev
+      run: bun run build:dev
 
     - name: Test binary
       run: |
