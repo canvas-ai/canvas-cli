@@ -15,7 +15,6 @@ import { setupDebug } from './lib/debug.js';
 // Commands
 import WorkspaceCommand from './commands/workspace.js';
 import ContextCommand from './commands/context.js';
-import ContextsCommand from './commands/contexts.js';
 import AuthCommand from './commands/auth.js';
 import ConfigCommand from './commands/config.js';
 import ServerCommand from './commands/server.js';
@@ -194,7 +193,6 @@ function showHelp() {
     console.log('  canvas ws universe                  # Show universe workspace');
     console.log('  canvas ws universe tree             # Show workspace tree');
     console.log('  canvas context                      # Show current context');
-    console.log('  canvas contexts                     # List all contexts');
     console.log('  canvas context create my-project');
     console.log('  canvas context switch my-project');
     console.log('  canvas context documents');
