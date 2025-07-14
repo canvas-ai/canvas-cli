@@ -24,44 +24,23 @@ curl -sSL https://raw.githubusercontent.com/canvas-ai/canvas-cli/main/scripts/in
 # Manual installation
 tar -xzf canvas-*.tar.gz
 chmod +x canvas-*
-sudo mv canvas-* /usr/local/bin/canvas
+sudo mv canvas-* ~/.local/bin/canvas
 ```
-
-### Method 2: Development Installation
-
-**Platform Requirements:**
-- **Node.js**: v20 LTS or higher  
-- **Operating Systems**: Linux, macOS, Windows 10/11
-- **Optional**: PM2 for local server management (`npm install -g pm2`)
-
-#### Linux/Mac
-```bash
-# Run the installation script
-./scripts/install.sh
-```
-
-#### Windows
-```powershell
-# PowerShell (Recommended)
-.\scripts\install.ps1
-```
-
-```batch
-:: Command Prompt
-.\scripts\install.bat
-```
-
-The installation scripts will:
-- Check Node.js version compatibility (v20+ required)
-- Create symlinks (Linux/Mac) or add bin directory to PATH (Windows)
-- Make executables executable (Linux/Mac)
-- Check if the local bin directory is accessible
-- Verify PM2 installation for server management
 
 ### Method 2: Manual Install (Cross-Platform)
 
+**Platform Requirements:**
+- **Node.js**: v20 LTS or higher
+- **Operating Systems**: Linux, macOS, Windows 10/11
+- **Optional**: PM2 for local server management (`npm install -g pm2`)
+
+#### Git clone this repository
+`git clone https://github.com/canvas-ai/canvas-cli ~/path/to/canvas-cli`
+`cd ~/path/to/canvas-cli`
+
 #### Linux/Mac
 ```bash
+
 # Create symlinks to your local bin directory
 ln -sf $(pwd)/bin/canvas.js ~/.local/bin/canvas
 ln -sf $(pwd)/bin/context.js ~/.local/bin/context
