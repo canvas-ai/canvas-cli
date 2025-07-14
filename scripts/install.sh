@@ -158,9 +158,13 @@ install_canvas() {
         error "Installation verification failed - binary is not executable"
     fi
 
-    # Cleanup
-    cd /
-    rm -rf "$temp_dir"
+    # Cleanup temp directory safely
+    if [[ -n "$temp_dir" ]] && [[ "$temp_dir" == "$HOME/.tmp-canvas-install-"* ]] && [[ -d "$temp_dir" ]]; then
+        rm -rf "$temp_dir"
+        log "Cleaned up temporary files"
+    else
+        warning "Skipped cleanup - temp directory path looks suspicious: '$temp_dir'"
+    fi
 
     # Final test
     log "Verifying installation..."
