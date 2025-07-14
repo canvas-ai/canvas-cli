@@ -9,8 +9,8 @@ import { fileURLToPath } from 'url';
 
 // Utils
 import config from './utils/config.js';
-import { parseInput, exit } from './utils/common.js';
-import { setupDebug } from './utils/debug.js';
+import { parseInput } from './lib/common.js';
+import { setupDebug } from './lib/debug.js';
 
 // Commands
 import WorkspaceCommand from './commands/workspace.js';
@@ -22,8 +22,13 @@ import ServerCommand from './commands/server.js';
 import QCommand from './commands/q.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
-const pkg = require('../package.json');
+
+// Package info - embedded at build time to avoid runtime dependency on package.json
+const pkg = {
+  name: 'canvas-cli',
+  version: '1.0.0-alpha',
+  description: 'Canvas CLI'
+};
 
 const debug = setupDebug('canvas:cli');
 

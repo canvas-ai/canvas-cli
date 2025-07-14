@@ -4,12 +4,35 @@ A command-line interface for managing Canvas workspaces, contexts, and documents
 
 ## Installation
 
-### Platform Requirements
-- **Node.js**: v20 LTS or higher
+### Method 1: Download Standalone Binary (Recommended)
+
+**No dependencies required!** Download the latest release for your platform:
+
+| Platform | Architecture | Download |
+|----------|-------------|----------|
+| **Linux** | x64 | [📦 canvas-linux-x64.tar.gz](https://github.com/canvas-ai/canvas-cli/releases/latest) |
+| **Linux** | ARM64 | [📦 canvas-linux-arm64.tar.gz](https://github.com/canvas-ai/canvas-cli/releases/latest) |
+| **macOS** | x64 | [📦 canvas-macos-x64.tar.gz](https://github.com/canvas-ai/canvas-cli/releases/latest) |
+| **macOS** | ARM64 (Apple Silicon) | [📦 canvas-macos-arm64.tar.gz](https://github.com/canvas-ai/canvas-cli/releases/latest) |
+| **Windows** | x64 | [📦 canvas-windows-x64.zip](https://github.com/canvas-ai/canvas-cli/releases/latest) |
+
+**Quick install with our script:**
+```bash
+# One-liner installation (Linux/macOS)
+curl -sSL https://raw.githubusercontent.com/canvas-ai/canvas-cli/main/scripts/install.sh | bash
+
+# Manual installation
+tar -xzf canvas-*.tar.gz
+chmod +x canvas-*
+sudo mv canvas-* /usr/local/bin/canvas
+```
+
+### Method 2: Development Installation
+
+**Platform Requirements:**
+- **Node.js**: v20 LTS or higher  
 - **Operating Systems**: Linux, macOS, Windows 10/11
 - **Optional**: PM2 for local server management (`npm install -g pm2`)
-
-### Method 1: Quick Install (Recommended)
 
 #### Linux/Mac
 ```bash
@@ -409,6 +432,32 @@ Configuration is stored in `~/.canvas/config/canvas-cli.json`:
   }
 }
 ```
+
+## Releases and Distribution
+
+Canvas CLI uses automated GitHub Actions to build and distribute cross-platform binaries. Every time a version tag is pushed, the system automatically:
+
+- 🏗️ **Builds binaries** for Linux, macOS, and Windows (x64 & ARM64)
+- 🧪 **Tests all binaries** to ensure they work correctly
+- 📦 **Creates release packages** with proper naming and compression
+- 🔐 **Generates checksums** for security verification
+- 🚀 **Publishes to GitHub Releases** with professional release notes
+
+### Creating a Release
+
+For maintainers:
+
+```bash
+# Quick release using our script
+./scripts/release.sh v1.0.0
+
+# Manual release process
+git tag v1.0.0
+git push origin v1.0.0
+# GitHub Actions handles the rest automatically!
+```
+
+See [RELEASE.md](RELEASE.md) for complete release documentation.
 
 ## Troubleshooting
 

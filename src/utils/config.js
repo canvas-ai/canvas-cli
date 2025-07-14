@@ -7,7 +7,7 @@ import pkg from 'node-machine-id';
 const { machineIdSync } = pkg;
 import debugInstance from 'debug';
 const debug = debugInstance('canvas:cli:config');
-import ip from 'ip';
+
 
 /**
  * Constants
@@ -114,12 +114,7 @@ export {
  */
 
 function generateClientContextArray() {
-    // TODO: Remove the ip dependency
-    const publicIp = ip.address('public');
-    const networkCidr =
-        Object.values(os.networkInterfaces())
-            .flat()
-            .find(({ family, address, cidr }) => family === 'IPv4' && (address === publicIp ))?.cidr || 'unknown';
+    const networkCidr = getNetworkCidr();
 
     return [
         `client/app/${APP_ID}`,

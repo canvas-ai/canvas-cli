@@ -3,7 +3,7 @@
 import chalk from 'chalk';
 import { CanvasApiClient } from '../utils/api-client.js';
 import { createFormatter } from '../utils/formatters.js';
-import { setupDebug } from '../utils/debug.js';
+import { setupDebug } from '../lib/debug.js';
 import { clientContext } from '../utils/client-context.js';
 
 const debug = setupDebug('canvas:cli:command');

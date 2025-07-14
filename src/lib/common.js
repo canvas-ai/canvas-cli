@@ -1,6 +1,5 @@
 'use strict';
 
-import fs from 'fs';
 import debugInstance from 'debug';
 const debug = debugInstance('canvas:cli:utils');
 
@@ -52,31 +51,6 @@ function parseInput(parsedArgs) {
     return { command, args, options, data, contextArray, featureArray, filterArray };
 }
 
-function readPromptTemplate(templatePath) {
-    return fs.readFileSync(templatePath, { encoding: 'utf8' });
-}
-
-function fillPromptTemplate(template, context, documents = [], query) {
-    let filledTemplate = template;
-    for (const [key, value] of Object.entries(context)) {
-        filledTemplate = filledTemplate.replace(`{${key}}`, value);
-    }
-
-    const formattedDocuments = documents.map(doc =>
-        `Document ${doc.id}:\n${doc.content}\n`
-    ).join('\n');
-
-    filledTemplate = filledTemplate.replace('{RETRIEVED_DOCUMENTS}', formattedDocuments);
-    filledTemplate = filledTemplate.replace('{USER_QUERY}', query);
-
-    return filledTemplate;
-}
-
-const exit = (code) => { process.exit(code); };
-
 export {
     parseInput,
-    readPromptTemplate,
-    fillPromptTemplate,
-    exit,
 };

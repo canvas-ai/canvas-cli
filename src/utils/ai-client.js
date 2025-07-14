@@ -1,6 +1,6 @@
 'use strict';
 
-import { setupDebug } from './debug.js';
+import { setupDebug } from '../lib/debug.js';
 
 const debug = setupDebug('canvas:cli:ai');
 

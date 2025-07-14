@@ -1,7 +1,7 @@
 'use strict';
 
 import axios from 'axios';
-import { setupDebug } from './debug.js';
+import { setupDebug } from '../lib/debug.js';
 
 const debug = setupDebug('canvas:cli:api');
 
@@ -267,10 +267,7 @@ export class CanvasApiClient {
         return response.data;
     }
 
-    async deleteDocumentViaWebSocket(containerId, documentId, containerType = 'context') {
-        // This method would typically use WebSocket, but for now we'll use REST
-        return this.deleteDocument(containerId, documentId, containerType);
-    }
+
 
     // Schema API methods
     async getSchemas() {

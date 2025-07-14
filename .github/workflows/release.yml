@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3-beta.1, etc.
+
+permissions:
+  contents: write  # Required for creating releases and uploading assets
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Setup Node.js (for npm dependencies)
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Extract version from tag
+      id: extract_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Update version in source
+      run: |
+        sed -i "s/version: '1.0.0-alpha'/version: '${{ steps.extract_version.outputs.version }}'/" src/index.js
+
+    - name: Build all platforms
+      run: |
+        echo "Building for all platforms..."
+        npm run build:linux
+        npm run build:linux-arm
+        npm run build:macos
+        npm run build:macos-arm
+        npm run build:windows
+
+    - name: Test binaries
+      run: |
+        echo "Testing Linux binary..."
+        ./dist/canvas-linux --version
+        echo "Binary tests passed!"
+
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+
+        # Copy binaries with proper names
+        cp dist/canvas-linux release-assets/canvas-linux-x64
+        cp dist/canvas-linux-arm release-assets/canvas-linux-arm64
+        cp dist/canvas-macos release-assets/canvas-macos-x64
+        cp dist/canvas-macos-arm release-assets/canvas-macos-arm64
+        cp dist/canvas-windows.exe release-assets/canvas-windows-x64.exe
+
+        # Create compressed archives
+        cd release-assets
+
+        # Linux
+        tar -czf canvas-${{ steps.extract_version.outputs.version }}-linux-x64.tar.gz canvas-linux-x64
+        tar -czf canvas-${{ steps.extract_version.outputs.version }}-linux-arm64.tar.gz canvas-linux-arm64
+
+        # macOS
+        tar -czf canvas-${{ steps.extract_version.outputs.version }}-macos-x64.tar.gz canvas-macos-x64
+        tar -czf canvas-${{ steps.extract_version.outputs.version }}-macos-arm64.tar.gz canvas-macos-arm64
+
+        # Windows
+        zip canvas-${{ steps.extract_version.outputs.version }}-windows-x64.zip canvas-windows-x64.exe
+
+        # Create checksums
+        sha256sum *.tar.gz *.zip > checksums.txt
+
+        ls -la
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        ## Canvas CLI ${{ steps.extract_version.outputs.tag }}
+
+        ### Download
+
+        Choose the appropriate binary for your platform:
+
+        | Platform | Architecture | Download |
+        |----------|-------------|----------|
+        | Linux | x64 | [canvas-${{ steps.extract_version.outputs.version }}-linux-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.extract_version.outputs.tag }}/canvas-${{ steps.extract_version.outputs.version }}-linux-x64.tar.gz) |
+        | Linux | ARM64 | [canvas-${{ steps.extract_version.outputs.version }}-linux-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.extract_version.outputs.tag }}/canvas-${{ steps.extract_version.outputs.version }}-linux-arm64.tar.gz) |
+        | macOS | x64 | [canvas-${{ steps.extract_version.outputs.version }}-macos-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.extract_version.outputs.tag }}/canvas-${{ steps.extract_version.outputs.version }}-macos-x64.tar.gz) |
+        | macOS | ARM64 (Apple Silicon) | [canvas-${{ steps.extract_version.outputs.version }}-macos-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.extract_version.outputs.tag }}/canvas-${{ steps.extract_version.outputs.version }}-macos-arm64.tar.gz) |
+        | Windows | x64 | [canvas-${{ steps.extract_version.outputs.version }}-windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/${{ steps.extract_version.outputs.tag }}/canvas-${{ steps.extract_version.outputs.version }}-windows-x64.zip) |
+
+        ### Installation
+
+        1. Download the appropriate archive for your platform
+        2. Extract the binary
+        3. Make it executable (Linux/macOS): `chmod +x canvas-*`
+        4. Optionally, move to a directory in your PATH
+
+        ### Quick Start
+
+        ```bash
+        # Linux/macOS
+        ./canvas-linux-x64 --version
+        ./canvas-linux-x64 --help
+
+        # Windows
+        canvas-windows-x64.exe --version
+        canvas-windows-x64.exe --help
+        ```
+
+        ### Features
+
+        - ✅ Standalone binaries (no runtime dependencies)
+        - ✅ Cross-platform support
+        - ✅ Full Canvas CLI functionality
+        - ✅ AI assistant integration
+        - ✅ Context and workspace management
+
+        ### Verification
+
+        Verify download integrity using the provided checksums:
+        ```bash
+        sha256sum -c checksums.txt
+        ```
+        EOF
+
+        echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.extract_version.outputs.tag }}
+        name: Canvas CLI ${{ steps.extract_version.outputs.tag }}
+        body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+        draft: false
+        prerelease: ${{ contains(steps.extract_version.outputs.version, '-') }}
+        files: |
+          release-assets/*.tar.gz
+          release-assets/*.zip
+          release-assets/checksums.txt
+        token: ${{ secrets.GITHUB_TOKEN }}

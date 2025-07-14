@@ -13,7 +13,16 @@
   "scripts": {
     "lint": "eslint \"**/*.js\"",
     "lint:fix": "eslint \"**/*.js\" --fix",
-    "format": "prettier --write \"**/*.js\""
+    "format": "prettier --write \"**/*.js\"",
+    "build": "npm run build:all",
+    "build:all": "npm run build:linux && npm run build:macos && npm run build:windows",
+    "build:linux": "bun build --compile --target=bun-linux-x64 --outfile=dist/canvas-linux ./src/index.js",
+    "build:linux-arm": "bun build --compile --target=bun-linux-arm64 --outfile=dist/canvas-linux-arm ./src/index.js",
+    "build:macos": "bun build --compile --target=bun-darwin-x64 --outfile=dist/canvas-macos ./src/index.js",
+    "build:macos-arm": "bun build --compile --target=bun-darwin-arm64 --outfile=dist/canvas-macos-arm ./src/index.js",
+    "build:windows": "bun build --compile --target=bun-windows-x64 --outfile=dist/canvas-windows.exe ./src/index.js",
+    "build:dev": "bun build --compile --outfile=dist/canvas-dev ./src/index.js",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",
@@ -37,7 +46,6 @@
     "detect-libc": "^2.0.3",
     "figlet": "^1.8.0",
     "install": "^0.13.0",
-    "ip": "^2.0.1",
     "json2csv": "^5.0.6",
     "llamaindex": "^0.6.15",
     "minimist": "^1.2.8",
