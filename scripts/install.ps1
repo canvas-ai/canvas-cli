@@ -3,125 +3,257 @@
 
 param(
     [switch]$Force,
+    [switch]$Help,
     [string]$InstallPath = $null
 )
 
-Write-Host "🎨 Canvas CLI Installation (Windows)" -ForegroundColor Cyan
-Write-Host "====================================" -ForegroundColor Cyan
-Write-Host ""
+# Colors for output
+$Red = "Red"
+$Green = "Green"
+$Yellow = "Yellow"
+$Cyan = "Cyan"
+$White = "White"
 
-# Get the CLI directory (parent of scripts directory)
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$CliDir = Split-Path -Parent $ScriptDir
-$BinDir = Join-Path $CliDir "bin"
+# Logging functions
+function Write-Log { param($Message) Write-Host "[INFO] $Message" -ForegroundColor $Cyan }
+function Write-Success { param($Message) Write-Host "[SUCCESS] $Message" -ForegroundColor $Green }
+function Write-Warning { param($Message) Write-Host "[WARNING] $Message" -ForegroundColor $Yellow }
+function Write-Error { param($Message) Write-Host "[ERROR] $Message" -ForegroundColor $Red; exit 1 }
 
-# Check if we're in the right directory
-if (-not (Test-Path $BinDir)) {
-    Write-Host "❌ Error: bin directory not found at $BinDir" -ForegroundColor Red
-    Write-Host "Please run this script from the Canvas CLI directory or its parent." -ForegroundColor Red
-    exit 1
+# Configuration
+$Repo = "canvas-ai/canvas-cli"
+$DefaultInstallDir = "$env:USERPROFILE\.local\bin"
+$BinaryName = "canvas.exe"
+
+# Show help
+function Show-Help {
+    Write-Host @"
+Canvas CLI Installation Script for Windows
+
+USAGE:
+    .\install.ps1 [OPTIONS]
+
+OPTIONS:
+    -Force              Force reinstall if already installed
+    -Help               Show this help message
+    -InstallPath        Custom installation directory
+
+EXAMPLES:
+    # Install Canvas CLI locally
+    .\install.ps1
+
+    # Install to custom location
+    .\install.ps1 -InstallPath "C:\Tools\Canvas"
+
+    # Force reinstall
+    .\install.ps1 -Force
+
+"@ -ForegroundColor $White
 }
 
-Write-Host "📁 CLI Directory: $CliDir" -ForegroundColor Green
-Write-Host "📂 Bin Directory: $BinDir" -ForegroundColor Green
-Write-Host ""
+# Parse command line arguments
+if ($Help) {
+    Show-Help
+    exit 0
+}
 
-# Check Node.js installation
-Write-Host "🔍 Checking Node.js installation..." -ForegroundColor Yellow
-try {
-    $nodeVersion = node --version
-    Write-Host "✅ Node.js found: $nodeVersion" -ForegroundColor Green
+# Detect platform and architecture
+function Get-Platform {
+    $arch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
+    return "windows-$arch"
+}
 
-    # Check if version is v20+
-    $versionNum = [int]($nodeVersion -replace "v(\d+)\..*", '$1')
-    if ($versionNum -lt 20) {
-        Write-Host "⚠️  Warning: Node.js version $nodeVersion detected. Canvas CLI requires v20 or higher." -ForegroundColor Yellow
+# Get latest release info from GitHub API
+function Get-LatestRelease {
+    $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
+
+    try {
+        $response = Invoke-RestMethod -Uri $apiUrl -Method Get
+        return $response.tag_name
     }
-} catch {
-    Write-Host "❌ Error: Node.js not found. Please install Node.js v20 LTS or higher." -ForegroundColor Red
-    Write-Host "Download from: https://nodejs.org/en/download/" -ForegroundColor Red
-    exit 1
+    catch {
+        Write-Error "Failed to get latest release information from GitHub: $($_.Exception.Message)"
+    }
 }
 
-Write-Host ""
+# Check dependencies
+function Test-Dependencies {
+    $missingDeps = @()
 
-# Determine installation method
-if ($InstallPath) {
-    $TargetDir = $InstallPath
-    Write-Host "🎯 Using custom installation path: $TargetDir" -ForegroundColor Cyan
-} else {
-    # Default to adding bin directory to PATH
-    Write-Host "🎯 Adding Canvas CLI bin directory to PATH..." -ForegroundColor Cyan
+    # Check for PowerShell 5.1+ (for Invoke-RestMethod)
+    if ($PSVersionTable.PSVersion.Major -lt 5) {
+        $missingDeps += "PowerShell 5.1 or higher"
+    }
 
-    # Get current user PATH
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::User)
+    # Check for .NET Framework (for web requests)
+    try {
+        [System.Net.WebRequest]::Create("https://github.com") | Out-Null
+    }
+    catch {
+        $missingDeps += ".NET Framework"
+    }
 
-    # Check if bin directory is already in PATH
-    if ($currentPath -split ';' -contains $BinDir) {
-        Write-Host "✅ Canvas CLI bin directory is already in PATH" -ForegroundColor Green
-    } else {
-        Write-Host "📝 Adding $BinDir to user PATH..." -ForegroundColor Yellow
+    if ($missingDeps.Count -gt 0) {
+        Write-Error "Missing required dependencies: $($missingDeps -join ', ')"
+    }
+}
 
-        try {
-            $newPath = if ($currentPath) { "$currentPath;$BinDir" } else { $BinDir }
-            [Environment]::SetEnvironmentVariable("PATH", $newPath, [EnvironmentVariableTarget]::User)
-            Write-Host "✅ Successfully added to PATH" -ForegroundColor Green
-            Write-Host "⚠️  Note: You may need to restart your terminal for PATH changes to take effect" -ForegroundColor Yellow
-        } catch {
-            Write-Host "❌ Error adding to PATH: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "You can manually add $BinDir to your PATH in System Environment Variables" -ForegroundColor Yellow
+# Download and install binary
+function Install-Canvas {
+    $platform = Get-Platform
+    $version = Get-LatestRelease
+    $extension = "zip"
+    $filename = "canvas-$($version.TrimStart('v'))-$platform.$extension"
+    $downloadUrl = "https://github.com/$Repo/releases/download/$version/$filename"
+    $tempDir = "$env:TEMP\canvas-install-$(Get-Random)"
+    $installDir = if ($InstallPath) { $InstallPath } else { $DefaultInstallDir }
+
+    Write-Log "Detected platform: $platform"
+    Write-Log "Latest version: $version"
+    Write-Log "Installing to: $installDir"
+
+    # Create install and temp directories
+    try {
+        New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    }
+    catch {
+        Write-Error "Failed to create directories: $($_.Exception.Message)"
+    }
+
+    # Download
+    Write-Log "Downloading Canvas CLI..."
+    $downloadPath = Join-Path $tempDir $filename
+
+    try {
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
+    }
+    catch {
+        Write-Error "Download failed from: $downloadUrl`nError: $($_.Exception.Message)"
+    }
+
+    # Verify download
+    if (-not (Test-Path $downloadPath) -or (Get-Item $downloadPath).Length -eq 0) {
+        Write-Error "Downloaded file is missing or empty: $filename"
+    }
+
+    # Extract
+    Write-Log "Extracting binary..."
+    try {
+        Expand-Archive -Path $downloadPath -DestinationPath $tempDir -Force
+    }
+    catch {
+        Write-Error "Failed to extract: $filename`nError: $($_.Exception.Message)"
+    }
+
+    # Find the binary (handle different naming patterns)
+    $binaryPath = $null
+    $candidates = @(
+        "canvas-$($platform.Split('-')[0])-$($platform.Split('-')[1])",
+        "canvas-$platform",
+        "canvas"
+    )
+
+    foreach ($candidate in $candidates) {
+        $candidatePath = Join-Path $tempDir "$candidate.exe"
+        if (Test-Path $candidatePath) {
+            $binaryPath = $candidatePath
+            break
         }
     }
-}
 
-Write-Host ""
-
-# Make sure all scripts in bin are accessible
-Write-Host "🔍 Checking Canvas CLI binaries..." -ForegroundColor Yellow
-$binaries = @("canvas.js", "context.js", "ws.js", "q.js")
-
-foreach ($binary in $binaries) {
-    $binaryPath = Join-Path $BinDir $binary
-    if (Test-Path $binaryPath) {
-        Write-Host "   ✅ Found: $binary" -ForegroundColor Green
-    } else {
-        Write-Host "   ❌ Missing: $binary" -ForegroundColor Red
+    if (-not $binaryPath -or -not (Test-Path $binaryPath)) {
+        Write-Error "Binary not found after extraction. Expected one of: $($candidates -join ', ')"
     }
+
+    # Test the binary
+    Write-Log "Testing binary..."
+    try {
+        $testResult = & $binaryPath --version 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Binary test failed - the downloaded binary is not working"
+        }
+    }
+    catch {
+        Write-Error "Binary test failed: $($_.Exception.Message)"
+    }
+
+    # Install
+    Write-Log "Installing binary..."
+    $targetPath = Join-Path $installDir $BinaryName
+
+    try {
+        Move-Item -Path $binaryPath -Destination $targetPath -Force
+    }
+    catch {
+        Write-Error "Failed to install binary to: $targetPath`nError: $($_.Exception.Message)"
+    }
+
+    # Verify installation
+    if (-not (Test-Path $targetPath)) {
+        Write-Error "Installation verification failed - binary not found at: $targetPath"
+    }
+
+    # Cleanup temp directory
+    try {
+        Remove-Item -Path $tempDir -Recurse -Force
+        Write-Log "Cleaned up temporary files"
+    }
+    catch {
+        Write-Warning "Failed to cleanup temp directory: $tempDir"
+    }
+
+    # Final test
+    Write-Log "Verifying installation..."
+    try {
+        $installedVersion = & $targetPath --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Canvas CLI installed successfully!"
+            Write-Log "Installed version: $installedVersion"
+        } else {
+            Write-Error "Installation verification failed - cannot run installed binary"
+        }
+    }
+    catch {
+        Write-Error "Installation verification failed: $($_.Exception.Message)"
+    }
+
+    return $installDir
+}
+
+# Main execution
+Write-Host "🎨 Canvas CLI Installation Script for Windows" -ForegroundColor $Cyan
+Write-Host "=============================================" -ForegroundColor $Cyan
+Write-Host ""
+Write-Log "Repository: https://github.com/$Repo"
+
+# Check system requirements
+Test-Dependencies
+
+# Install Canvas CLI
+$installDir = Install-Canvas
+
+# Show PATH setup information if needed
+Write-Host ""
+$currentPath = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::User)
+
+if ($currentPath -split ';' -notcontains $installDir) {
+    Write-Warning "$installDir is not in your PATH"
+    Write-Log "Add this to your PATH in System Environment Variables:"
+    Write-Host "  $installDir" -ForegroundColor $White
+    Write-Log ""
+    Write-Log "Or run this command to add it automatically:"
+    Write-Host "  [Environment]::SetEnvironmentVariable('PATH', [Environment]::GetEnvironmentVariable('PATH', 'User') + ';$installDir', 'User')" -ForegroundColor $White
+    Write-Log ""
+    Write-Log "For now, you can run canvas with the full path:"
+    Write-Host "  $installDir\$BinaryName --version" -ForegroundColor $White
+} else {
+    Write-Log "Canvas CLI is ready to use!"
 }
 
 Write-Host ""
-
-# Check for PM2
-Write-Host "🔍 Checking for PM2..." -ForegroundColor Yellow
-try {
-    $pm2Version = pm2 --version
-    Write-Host "✅ PM2 is installed ($pm2Version)" -ForegroundColor Green
-} catch {
-    Write-Host "⚠️  PM2 is not installed" -ForegroundColor Yellow
-    Write-Host "   Install it for server management: npm install -g pm2" -ForegroundColor Yellow
-}
-
-Write-Host ""
-Write-Host "🎉 Installation complete!" -ForegroundColor Green
-Write-Host ""
-Write-Host "Test your installation by opening a new PowerShell/Command Prompt window and trying:" -ForegroundColor Cyan
-Write-Host "  node `"$BinDir\canvas.js`" --version" -ForegroundColor White
-Write-Host "  node `"$BinDir\q.js`" --help" -ForegroundColor White
-Write-Host "  node `"$BinDir\ws.js`" list" -ForegroundColor White
-Write-Host "  node `"$BinDir\context.js`" tree" -ForegroundColor White
-Write-Host ""
-
-if (-not $InstallPath) {
-    Write-Host "After restarting your terminal, you should be able to use:" -ForegroundColor Cyan
-    Write-Host "  canvas --version" -ForegroundColor White
-    Write-Host "  q --help" -ForegroundColor White
-    Write-Host "  ws list" -ForegroundColor White
-    Write-Host "  context tree" -ForegroundColor White
-    Write-Host ""
-}
-
-Write-Host "Quick start:" -ForegroundColor Cyan
-Write-Host "  canvas server start    # Start local Canvas server" -ForegroundColor White
-Write-Host "  canvas ws list         # List workspaces" -ForegroundColor White
-Write-Host "  canvas ctx list        # List contexts" -ForegroundColor White
+Write-Log "Quick start:"
+Write-Host "  canvas --version" -ForegroundColor $White
+Write-Host "  canvas --help" -ForegroundColor $White
+Write-Host "  canvas config show" -ForegroundColor $White
 Write-Host ""
