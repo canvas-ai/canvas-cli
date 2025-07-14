@@ -208,6 +208,8 @@ function showHelp() {
     console.log('  cat error.log | canvas q "What does this error mean?"');
     console.log();
 
+
+
     console.log(chalk.bold('Configuration:'));
     console.log(`  Config file: ${config.path}`);
     console.log('  canvas config show');

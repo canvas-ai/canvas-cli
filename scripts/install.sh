@@ -19,8 +19,39 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 # Configuration
 REPO="canvas-ai/canvas-cli"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BINARY_NAME="canvas"
+
+# Prompt for installation location if not set
+choose_install_location() {
+    if [ -n "$INSTALL_DIR" ]; then
+        return # Already set via environment variable
+    fi
+
+    log "Choose installation location:"
+    echo "  1) Local install (${HOME}/.local/bin) - No sudo required [default]"
+    echo "  2) Global install (/usr/local/bin) - Requires sudo"
+    echo
+    printf "Enter your choice (1-2): "
+    read -r choice
+
+    case "$choice" in
+        1|"")
+            INSTALL_DIR="${HOME}/.local/bin"
+            log "Selected: Local installation to $INSTALL_DIR"
+            # Ensure local bin directory exists
+            mkdir -p "$INSTALL_DIR"
+            ;;
+        2)
+            INSTALL_DIR="/usr/local/bin"
+            log "Selected: Global installation to $INSTALL_DIR"
+            ;;
+        *)
+            warning "Invalid choice. Using default: Local installation"
+            INSTALL_DIR="${HOME}/.local/bin"
+            mkdir -p "$INSTALL_DIR"
+            ;;
+    esac
+}
 
 # Detect platform and architecture
 detect_platform() {
@@ -198,11 +229,29 @@ log "Canvas CLI Installation Script"
 log "Repository: https://github.com/$REPO"
 
 check_dependencies
+choose_install_location
 install_canvas
 
 log "Installation complete!"
 log ""
+
+# Show PATH setup information for local installs
+if [[ "$INSTALL_DIR" == "$HOME/.local/bin" ]]; then
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        warning "~/.local/bin is not in your PATH"
+        log "Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+        log ""
+        log "Then reload your shell or run: source ~/.bashrc"
+        log ""
+        log "For now, you can run canvas with the full path:"
+        log "  $INSTALL_DIR/canvas --version"
+    fi
+fi
+
 log "Quick start:"
 log "  canvas --version"
 log "  canvas --help"
 log "  canvas config show"
+log ""
+
