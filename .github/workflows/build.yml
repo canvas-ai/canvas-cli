@@ -8,30 +8,29 @@ on:
 
 jobs:
   test:
-    name: Test on Node.js
+    name: Test on Bun
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
       with:
-        node-version: '20'
-        cache: 'npm'
+        bun-version: latest
 
     - name: Install dependencies
-      run: npm ci
+      run: bun install
 
     - name: Run linter
-      run: npm run lint
+      run: bun run lint
 
     - name: Test CLI functionality
       run: |
-        node src/index.js --version
-        node src/index.js --help
-        node src/index.js config show --format json
+        bun run src/index.js --version
+        bun run src/index.js --help
+        bun run src/index.js config show --format json
 
   build-dev:
     name: Build Development Binary
