@@ -3,7 +3,6 @@
 
 import minimist from 'minimist';
 import chalk from 'chalk';
-import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -38,7 +37,6 @@ const COMMANDS = {
     workspace: WorkspaceCommand,
     ws: WorkspaceCommand, // alias
     context: ContextCommand,
-    contexts: ContextsCommand, // alias for context list
     ctx: ContextCommand, // alias
     auth: AuthCommand,
     config: ConfigCommand,
