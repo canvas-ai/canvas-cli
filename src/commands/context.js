@@ -152,11 +152,12 @@ export class ContextCommand extends BaseCommand {
             const response = await this.apiClient.deleteContext(contextAddress);
             const result = response.payload || response.data || response;
 
-            console.log(response);
-            console.log(result);
-
-            console.log(chalk.green(`✓ Context '${contextAddress}' destroyed successfully`));
-            console.log(result);
+            if (result.status === 'success') {
+                console.log(chalk.green(`✓ Context '${contextAddress}' destroyed successfully`));
+            } else {
+                console.log(chalk.red(`✗ Failed to destroy context: ${result.message}`));
+                return 1;
+            }
             return 0;
         } catch (error) {
             throw new Error(`Failed to destroy context: ${error.message}`);
