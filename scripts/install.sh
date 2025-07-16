@@ -169,9 +169,21 @@ install_canvas() {
     # Final test
     log "Verifying installation..."
     local installed_version
-    if installed_version=$("$INSTALL_DIR/$BINARY_NAME" --version 2>/dev/null); then
+    local exit_code
+
+    # Capture both output and exit code
+    installed_version=$("$INSTALL_DIR/$BINARY_NAME" --version 2>&1)
+    exit_code=$?
+
+    # Check if we got version information (success) regardless of connection status
+    if [[ $exit_code -eq 0 ]] || [[ "$installed_version" =~ canvas-cli[[:space:]]v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
         success "Canvas CLI installed successfully!"
-        log "Installed version: $installed_version"
+        # Extract just the version from the output
+        if [[ "$installed_version" =~ canvas-cli[[:space:]]v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            log "Installed version: ${BASH_REMATCH[0]}"
+        else
+            log "Binary installed and working"
+        fi
     else
         error "Installation verification failed - cannot run installed binary"
     fi
