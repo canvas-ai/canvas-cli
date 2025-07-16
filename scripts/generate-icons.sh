@@ -48,7 +48,7 @@ fi
 echo "🔨 Using ImageMagick: $MAGICK_CMD"
 echo
 
-# Generate Windows .ico (multi-size)
+# Generate Windows .ico (multi-size: 16, 32, 48, 64px in one file)
 echo "📦 Generating Windows icon..."
 if command -v magick >/dev/null 2>&1; then
     magick "$SOURCE_PNG" -define icon:auto-resize=64,48,32,16 "$ICONS_DIR/canvas.ico"
@@ -60,18 +60,20 @@ else
         \( -clone 0 -resize 16x16 \) \
         -delete 0 "$ICONS_DIR/canvas.ico"
 fi
-echo "✅ Windows icon: $ICONS_DIR/canvas.ico"
+echo "✅ Windows icon: $ICONS_DIR/canvas.ico (contains 16,32,48,64px)"
 
-# Generate macOS .icns (if on macOS with iconutil)
+# Generate macOS .icns (bundle containing multiple sizes + retina versions)
 echo "📦 Generating macOS icon..."
 if command -v iconutil >/dev/null 2>&1; then
     ICONSET_DIR="$ICONS_DIR/canvas.iconset"
     mkdir -p "$ICONSET_DIR"
 
-    # Generate all required sizes for iconset
+    # Generate all required sizes for iconset bundle
+    # .icns files contain multiple sizes: 16,32,64,128,256,512px + @2x retina versions
     sizes=(16 32 64 128 256 512)
     retina_sizes=(32 64 128 256 512 1024)
 
+    echo "   📝 Creating iconset with sizes: ${sizes[*]} + retina @2x versions"
     for i in "${!sizes[@]}"; do
         size=${sizes[$i]}
         retina_size=${retina_sizes[$i]}
@@ -87,18 +89,21 @@ if command -v iconutil >/dev/null 2>&1; then
         fi
     done
 
-    # Convert iconset to icns
+    # Convert iconset bundle to single .icns file
     iconutil -c icns "$ICONSET_DIR" -o "$ICONS_DIR/canvas.icns"
     rm -rf "$ICONSET_DIR"
-    echo "✅ macOS icon: $ICONS_DIR/canvas.icns"
+    echo "✅ macOS icon: $ICONS_DIR/canvas.icns (contains all sizes + retina)"
 else
+    # Don't create a fake .icns file - this causes bun icon embedding to fail
     echo "⚠️  Skipping macOS icon (iconutil not available - macOS only)"
+    echo "   📝 Note: Build on macOS or copy proper .icns from macOS build"
 fi
 
-# Generate Linux .png (high quality copy)
+# Generate Linux .png (resize to optimal size for desktop environments)
 echo "📦 Generating Linux icon..."
-cp "$SOURCE_PNG" "$ICONS_DIR/canvas.png"
-echo "✅ Linux icon: $ICONS_DIR/canvas.png"
+# Most Linux desktop environments prefer 64x64 or 128x128 icons
+$MAGICK_CMD "$SOURCE_PNG" -resize 128x128 "$ICONS_DIR/canvas.png"
+echo "✅ Linux icon: $ICONS_DIR/canvas.png (128x128px)"
 
 echo
 echo "🎉 Icon generation completed!"

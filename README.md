@@ -110,46 +110,6 @@ node bin/canvas.js --help
 node bin\canvas.js --help
 ```
 
-### Verification
-Test your installation by running these commands in a new terminal:
-
-```bash
-# Check Canvas CLI installation
-canvas --version
-canvas --help
-
-# Test shortcuts
-context list
-ws list
-q "Hello Canvas!"
-
-# Check server connectivity (if server is running)
-canvas config show
-canvas auth status
-```
-
-#### Windows
-```powershell
-# Check if bin directory is in PATH
-$env:PATH -split ';' | Where-Object { $_ -like "*canvas*" }
-
-# If PATH not updated, add manually in System Environment Variables
-# Or run the setx command again with full path
-```
-
-#### All Platforms
-```bash
-# Verify Node.js installation
-node --version  # Should show v20+ 
-
-# Check file permissions and existence
-ls -la bin/     # Linux/Mac
-dir bin\        # Windows
-
-# Test direct execution
-node bin/canvas.js --version
-```
-
 ## Usage
 
 ```bash
@@ -178,6 +138,7 @@ canvas config set server.url http://localhost:8001/rest/v2
 - `canvas workspace delete <id> --force` - Delete workspace
 
 ### Context Management
+
 - `canvas context list` - List all contexts
 - `canvas context list --workspace <id>` - Filter contexts by workspace
 - `canvas context show <id>` - Show context details
@@ -187,16 +148,19 @@ canvas config set server.url http://localhost:8001/rest/v2
 - `canvas context tree` - Show context tree
 
 ### Authentication
+
 - `canvas auth status` - Show authentication status
 - `canvas auth login` - Login to Canvas server
 - `canvas auth tokens` - List API tokens
 
 ### Configuration
+
 - `canvas config show` - Show current configuration
 - `canvas config set <key> <value>` - Set configuration value
 - `canvas config get <key>` - Get configuration value
 
 ### AI Assistant
+
 - `canvas q "<query>"` - Ask the AI assistant (context-aware)
 - `canvas q status` - Show AI connector status
 - `canvas q templates` - List available prompt templates
