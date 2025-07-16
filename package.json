@@ -16,13 +16,15 @@
     "format": "prettier --write \"**/*.js\"",
     "build": "npm run build:all",
     "build:all": "npm run build:linux && npm run build:macos && npm run build:windows",
-    "build:linux": "bun build --compile --target=bun-linux-x64 --outfile=dist/canvas-linux ./src/index.js",
-    "build:linux-arm": "bun build --compile --target=bun-linux-arm64 --outfile=dist/canvas-linux-arm ./src/index.js",
-    "build:macos": "bun build --compile --target=bun-darwin-x64 --outfile=dist/canvas-macos ./src/index.js",
-    "build:macos-arm": "bun build --compile --target=bun-darwin-arm64 --outfile=dist/canvas-macos-arm ./src/index.js",
-    "build:windows": "bun build --compile --target=bun-windows-x64 --outfile=dist/canvas-windows.exe ./src/index.js",
+    "build:linux": "bun build --compile --target=bun-linux-x64 --minify --icon=assets/icons/canvas.png --outfile=dist/canvas-linux ./src/index.js",
+    "build:linux-arm": "bun build --compile --target=bun-linux-arm64 --minify --icon=assets/icons/canvas.png --outfile=dist/canvas-linux-arm ./src/index.js",
+    "build:macos": "bun build --compile --target=bun-darwin-x64 --minify --icon=assets/icons/canvas.icns --outfile=dist/canvas-macos ./src/index.js",
+    "build:macos-arm": "bun build --compile --target=bun-darwin-arm64 --minify --icon=assets/icons/canvas.icns --outfile=dist/canvas-macos-arm ./src/index.js",
+    "build:windows": "bun build --compile --target=bun-windows-x64 --minify --icon=assets/icons/canvas.ico --outfile=dist/canvas-windows.exe ./src/index.js",
     "build:dev": "bun build --compile --outfile=dist/canvas-dev ./src/index.js",
-    "clean": "rm -rf dist"
+    "generate:icons": "scripts/generate-icons.sh",
+    "clean": "rm -rf dist",
+    "clean:icons": "rm -rf assets/icons"
   },
   "repository": {
     "type": "git",

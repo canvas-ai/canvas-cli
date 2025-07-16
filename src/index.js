@@ -6,6 +6,12 @@ import chalk from 'chalk';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Windows compatibility - initialize early
+import { initWindowsCompat, needsWindowsCompat, getPlatformInfo } from './utils/windows-compat.js';
+
+// Initialize Windows compatibility fixes before anything else
+initWindowsCompat();
+
 // Utils
 import config from './utils/config.js';
 import { parseInput } from './lib/common.js';
@@ -19,6 +25,7 @@ import ConfigCommand from './commands/config.js';
 import ServerCommand from './commands/server.js';
 import QCommand from './commands/q.js';
 import RemoteCommand from './commands/remote.js';
+import DiagnosticCommand from './commands/diagnostic.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +51,8 @@ const COMMANDS = {
     server: ServerCommand,
     remote: RemoteCommand, // remote management
     q: QCommand, // AI query command
+    diagnostic: DiagnosticCommand, // diagnostic tools
+    diag: DiagnosticCommand, // alias
     help: null, // handled separately
     version: null // handled separately
 };
@@ -81,6 +90,24 @@ export async function main(argv = process.argv.slice(2)) {
         // Handle version
         if (args.version) {
             console.log(`${pkg.name} v${pkg.version}`);
+
+            // Show platform info for debugging if on Windows
+            if (needsWindowsCompat() || args.debug) {
+                const platformInfo = getPlatformInfo();
+                console.log();
+                console.log('Platform Information:');
+                console.log(`  Platform: ${platformInfo.platform} ${platformInfo.arch}`);
+                console.log(`  OS Release: ${platformInfo.release}`);
+                console.log(`  Node Version: ${platformInfo.nodeVersion}`);
+                console.log(`  Is Bundled: ${platformInfo.isBundled}`);
+                console.log(`  Has Console: ${platformInfo.hasConsole}`);
+                console.log(`  TTY: ${platformInfo.stdoutIsTTY}`);
+                console.log(`  Force Color: ${platformInfo.forceColor}`);
+                if (platformInfo.isBun) {
+                    console.log(`  Bun Runtime: Yes`);
+                }
+            }
+
             return 0;
         }
 
@@ -176,6 +203,7 @@ function showHelp() {
     console.log('  server            Manage local Canvas server (PM2)');
     console.log('  remote            Manage remote Canvas servers');
     console.log('  q                 AI assistant (context-aware)');
+    console.log('  diagnostic, diag  Platform diagnostic tools');
     console.log();
 
     console.log(chalk.bold('Global Options:'));
@@ -208,6 +236,8 @@ function showHelp() {
     console.log('  canvas ws universe tabs             # List workspace tabs');
     console.log('  canvas q "How do I create a new context?"');
     console.log('  cat error.log | canvas q "What does this error mean?"');
+    console.log('  canvas diagnostic platform          # Show platform info');
+    console.log('  canvas diagnostic console           # Test console output');
     console.log();
 
 

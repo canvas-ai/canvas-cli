@@ -1,0 +1,31 @@
+[build]
+# Optimize for smaller bundle sizes
+minify = true
+splitting = false
+target = "node"
+format = "esm"
+
+# External dependencies that should not be bundled
+external = []
+
+# Tree shaking configuration
+treeshaking = true
+
+# Windows-specific optimizations
+[build.windows]
+# Ensure proper console handling on Windows
+define = {
+  "process.platform": "'win32'"
+}
+
+# Compilation options for all targets
+[compile]
+# Reduce binary size by excluding unused features
+exclude = [
+  "bun:sqlite",
+  "bun:ffi",
+  "worker_threads"
+]
+
+# Performance optimizations
+optimization = "minify-identifiers"

@@ -38,11 +38,12 @@ function getUserHome() {
 const CANVAS_USER_HOME = USER_HOME;
 const CANVAS_USER_CONFIG = path.join(CANVAS_USER_HOME, 'config');
 
-// New file paths for remote management
-const REMOTES_FILE = path.join(CANVAS_USER_HOME, 'remotes.json');
-const CONTEXTS_FILE = path.join(CANVAS_USER_HOME, 'contexts.json');
-const WORKSPACES_FILE = path.join(CANVAS_USER_HOME, 'workspaces.json');
-const SESSION_CLI_FILE = path.join(CANVAS_USER_HOME, 'session-cli.json');
+// CLI config files in config directory
+const CLI_CONFIG_DIR = path.join(CANVAS_USER_HOME, 'config');
+const REMOTES_FILE = path.join(CLI_CONFIG_DIR, 'remotes.json');
+const CONTEXTS_FILE = path.join(CLI_CONFIG_DIR, 'contexts.json');
+const WORKSPACES_FILE = path.join(CLI_CONFIG_DIR, 'workspaces.json');
+const SESSION_CLI_FILE = path.join(CLI_CONFIG_DIR, 'session-cli.json');
 
 // Default configuration for main config (simplified for resource address schema)
 const DEFAULT_CONFIG = {
@@ -120,8 +121,9 @@ class RemoteStore {
     }
 
     async ensureFiles() {
-        // Ensure directory exists
+        // Ensure directories exist
         await fs.mkdir(CANVAS_USER_HOME, { recursive: true });
+        await fs.mkdir(CLI_CONFIG_DIR, { recursive: true });
 
         // Initialize files if they don't exist
         if (!existsSync(this.remotesFile)) {
@@ -286,6 +288,7 @@ export {
     APP_ID,
     CANVAS_USER_HOME,
     CANVAS_USER_CONFIG,
+    CLI_CONFIG_DIR,
     CLIENT_CONTEXT_ARRAY,
     EXIT_CODES,
     remoteStore,
