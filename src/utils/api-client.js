@@ -674,6 +674,35 @@ export class CanvasApiClient {
     }
 
     /**
+     * Context URL operations with resource address support
+     */
+
+    async getContextUrl(addressOrId) {
+        const { apiClient, resourceId } = await this.resolveResource(addressOrId);
+        return await apiClient.getContextUrl(resourceId);
+    }
+
+    async setContextUrl(addressOrId, url) {
+        const { apiClient, resourceId } = await this.resolveResource(addressOrId);
+        return await apiClient.setContextUrl(resourceId, url);
+    }
+
+    async getContextPath(addressOrId) {
+        const { apiClient, resourceId } = await this.resolveResource(addressOrId);
+        return await apiClient.getContextPath(resourceId);
+    }
+
+    async getContextPathArray(addressOrId) {
+        const { apiClient, resourceId } = await this.resolveResource(addressOrId);
+        return await apiClient.getContextPathArray(resourceId);
+    }
+
+    async getContextTree(addressOrId) {
+        const { apiClient, resourceId } = await this.resolveResource(addressOrId);
+        return await apiClient.getContextTree(resourceId);
+    }
+
+    /**
      * Utility methods
      */
 
