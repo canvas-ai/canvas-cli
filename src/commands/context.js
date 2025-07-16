@@ -199,7 +199,7 @@ export class ContextCommand extends BaseCommand {
             throw new Error('Context URL is required');
         }
 
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextId = await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.setContextUrl(contextId, url);
@@ -218,7 +218,7 @@ export class ContextCommand extends BaseCommand {
      * Get context URL
      */
     async handleUrl(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextId = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getContextUrl(contextId);
@@ -238,7 +238,7 @@ export class ContextCommand extends BaseCommand {
      * Get base URL for context (workspace part)
      */
     async handleBaseUrl(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextId = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getContextUrl(contextId);
@@ -263,7 +263,7 @@ export class ContextCommand extends BaseCommand {
      * Get context path
      */
     async handlePath(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextId = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getContextPath(contextId);
@@ -307,7 +307,7 @@ export class ContextCommand extends BaseCommand {
      * Show context tree
      */
     async handleTree(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextId = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getContextTree(contextId);
@@ -358,7 +358,7 @@ export class ContextCommand extends BaseCommand {
      * Get context workspace
      */
     async handleWorkspace(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextId = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getContextUrl(contextId);
@@ -571,7 +571,7 @@ export class ContextCommand extends BaseCommand {
             throw new Error('Document ID is required');
         }
 
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextId = await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getDocument(contextId, documentId, 'context');
@@ -712,7 +712,7 @@ export class ContextCommand extends BaseCommand {
             throw new Error('Document ID is required');
         }
 
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextId = await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getDocument(contextId, documentId, 'context');
@@ -784,7 +784,7 @@ export class ContextCommand extends BaseCommand {
             throw new Error('Document ID is required');
         }
 
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextId = await this.getCurrentContext(parsed.options);
 
         try {
             const response = await this.apiClient.getDocument(contextId, documentId, 'context');
@@ -832,7 +832,7 @@ export class ContextCommand extends BaseCommand {
      * Generic handler for document operations (delete/remove)
      */
     async handleDocumentOperation(parsed, documentIds, operation, featureArray, docType) {
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextId = await this.getCurrentContext(parsed.options);
 
         try {
             let response;
