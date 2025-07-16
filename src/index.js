@@ -32,7 +32,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Package info - embedded at build time to avoid runtime dependency on package.json
 const pkg = {
     name: 'canvas-cli',
-    version: '1.0.0-alpha',
+    version: '1.0.6',
     description: 'Canvas CLI'
 };
 
