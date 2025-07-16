@@ -1,7 +1,7 @@
 'use strict';
 
 import chalk from 'chalk';
-import { EnhancedCanvasApiClient } from '../utils/enhanced-api-client.js';
+import { CanvasApiClient } from '../utils/api-client.js';
 import { createFormatter } from '../utils/formatters.js';
 import { setupDebug } from '../lib/debug.js';
 import { clientContext } from '../utils/client-context.js';
@@ -14,7 +14,7 @@ const debug = setupDebug('canvas:cli:command');
 export class BaseCommand {
     constructor(config) {
         this.config = config;
-        this.apiClient = new EnhancedCanvasApiClient(config);
+        this.apiClient = new CanvasApiClient(config);
         this.debug = debug;
         this.clientContext = clientContext;
     }

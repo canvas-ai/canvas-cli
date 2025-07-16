@@ -526,7 +526,7 @@ export class RemoteCommand extends BaseCommand {
 
     async createRemoteApiClient(remoteId) {
         // Use the enhanced API client to get a client for the specific remote
-        return this.apiClient.getApiClientForRemote(remoteId);
+        return this.apiClient.getApiClient(remoteId);
     }
 
     getRemoteStatus(remoteConfig) {
