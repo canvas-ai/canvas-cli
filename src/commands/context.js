@@ -148,15 +148,15 @@ export class ContextCommand extends BaseCommand {
             throw new Error('Context address is required (format: user@remote:context or just context if default remote is bound)');
         }
 
-        if (!parsed.options.force) {
-            console.log(chalk.yellow(`Warning: This will permanently delete context '${contextAddress}' and all its documents.`));
-            console.log(chalk.yellow('Use --force to confirm deletion.'));
-            return 1;
-        }
-
         try {
-            await this.apiClient.deleteContext(contextAddress);
+            const response = await this.apiClient.deleteContext(contextAddress);
+            const result = response.payload || response.data || response;
+
+            console.log(response);
+            console.log(result);
+
             console.log(chalk.green(`✓ Context '${contextAddress}' destroyed successfully`));
+            console.log(result);
             return 0;
         } catch (error) {
             throw new Error(`Failed to destroy context: ${error.message}`);
@@ -206,8 +206,7 @@ export class ContextCommand extends BaseCommand {
 
             // Handle ResponseObject format
             const result = response.payload || response.data || response;
-
-            console.log(chalk.green(`✓ Context URL set to '${url}'`));
+            console.log(chalk.green(`✓ Context URL set to '${result.url}'`));
             return 0;
         } catch (error) {
             throw new Error(`Failed to set context URL: ${error.message}`);
