@@ -704,6 +704,48 @@ export class AuthFormatter extends BaseFormatter {
 }
 
 /**
+ * Remote formatter
+ */
+export class RemoteFormatter extends BaseFormatter {
+    formatTable(data) {
+        if (!Array.isArray(data)) {
+            data = [data];
+        }
+
+        if (data.length === 0) {
+            return chalk.yellow('No remotes found');
+        }
+
+        const table = new Table({
+            head: [
+                chalk.cyan('Remote ID'),
+                chalk.cyan('URL'),
+                chalk.cyan('Description'),
+                chalk.cyan('Auth'),
+                chalk.cyan('Last Synced'),
+                chalk.cyan('Default'),
+                chalk.cyan('Status')
+            ],
+            style: { head: [], border: [] }
+        });
+
+        data.forEach(remote => {
+            table.push([
+                remote.id || 'N/A',
+                this.truncate(remote.url, 30),
+                this.truncate(remote.description, 25),
+                remote.auth || 'N/A',
+                remote.lastSynced || 'Never',
+                remote.isDefault || '',
+                remote.status || 'Unknown'
+            ]);
+        });
+
+        return table.toString();
+    }
+}
+
+/**
  * Create formatter based on type
  */
 export function createFormatter(type, options = {}) {
@@ -716,6 +758,8 @@ export function createFormatter(type, options = {}) {
             return new DocumentFormatter(options);
         case 'auth':
             return new AuthFormatter(options);
+        case 'remote':
+            return new RemoteFormatter(options);
         default:
             return new BaseFormatter(options);
     }
@@ -727,5 +771,6 @@ export default {
     ContextFormatter,
     DocumentFormatter,
     AuthFormatter,
+    RemoteFormatter,
     createFormatter
 };

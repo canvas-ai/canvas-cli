@@ -1,7 +1,7 @@
 'use strict';
 
 import chalk from 'chalk';
-import { CanvasApiClient } from '../utils/api-client.js';
+import { EnhancedCanvasApiClient } from '../utils/enhanced-api-client.js';
 import { createFormatter } from '../utils/formatters.js';
 import { setupDebug } from '../lib/debug.js';
 import { clientContext } from '../utils/client-context.js';
@@ -14,7 +14,7 @@ const debug = setupDebug('canvas:cli:command');
 export class BaseCommand {
     constructor(config) {
         this.config = config;
-        this.apiClient = new CanvasApiClient(config);
+        this.apiClient = new EnhancedCanvasApiClient(config);
         this.debug = debug;
         this.clientContext = clientContext;
     }
@@ -97,6 +97,9 @@ export class BaseCommand {
         try {
             await this.apiClient.ping();
         } catch (error) {
+            if (error.message.includes('No default remote bound')) {
+                throw new Error(`No default remote configured. Use: canvas remote add <user@remote> <url> && canvas remote bind <user@remote>`);
+            }
             throw new Error(`Cannot connect to Canvas server: ${error.message}`);
         }
     }
@@ -126,10 +129,26 @@ export class BaseCommand {
 
 
     /**
-     * Get current context ID from config or options
+     * Get current context from session or options (supports resource addresses)
      */
-    getCurrentContext(options = {}) {
-        return options.context || this.config.get('session.context.id') || 'default';
+    async getCurrentContext(options = {}) {
+        if (options.context) {
+            return options.context;
+        }
+
+        // Get from session-cli.json
+        const session = await this.apiClient.remoteStore.getSession();
+        if (session.boundContext) {
+            return session.boundContext;
+        }
+
+        // Fallback to 'default' on current remote
+        const currentRemote = await this.apiClient.getCurrentRemote();
+        if (currentRemote) {
+            return `${currentRemote}:default`;
+        }
+
+        throw new Error('No default remote bound. Use: canvas remote bind <user@remote>');
     }
 
     /**

@@ -18,6 +18,7 @@ import AuthCommand from './commands/auth.js';
 import ConfigCommand from './commands/config.js';
 import ServerCommand from './commands/server.js';
 import QCommand from './commands/q.js';
+import RemoteCommand from './commands/remote.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,6 +42,7 @@ const COMMANDS = {
     auth: AuthCommand,
     config: ConfigCommand,
     server: ServerCommand,
+    remote: RemoteCommand, // remote management
     q: QCommand, // AI query command
     help: null, // handled separately
     version: null // handled separately
@@ -172,6 +174,7 @@ function showHelp() {
     console.log('  auth              Manage authentication');
     console.log('  config            Manage configuration');
     console.log('  server            Manage local Canvas server (PM2)');
+    console.log('  remote            Manage remote Canvas servers');
     console.log('  q                 AI assistant (context-aware)');
     console.log();
 
@@ -187,6 +190,9 @@ function showHelp() {
 
     console.log(chalk.bold('Examples:'));
     console.log('  canvas server start');
+    console.log('  canvas remote add admin@canvas.local http://localhost:8001');
+    console.log('  canvas remote sync admin@canvas.local');
+    console.log('  canvas remote bind admin@canvas.local');
     console.log('  canvas ws                           # List workspaces');
     console.log('  canvas ws universe                  # Show universe workspace');
     console.log('  canvas ws universe tree             # Show workspace tree');

@@ -3,11 +3,12 @@
 import Conf from 'conf';
 import os from 'os';
 import path from 'path';
+import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import pkg from 'node-machine-id';
 const { machineIdSync } = pkg;
 import debugInstance from 'debug';
 const debug = debugInstance('canvas:cli:config');
-
 
 /**
  * Constants
@@ -36,20 +37,15 @@ function getUserHome() {
 
 const CANVAS_USER_HOME = USER_HOME;
 const CANVAS_USER_CONFIG = path.join(CANVAS_USER_HOME, 'config');
+
+// New file paths for remote management
+const REMOTES_FILE = path.join(CANVAS_USER_HOME, 'remotes.json');
+const CONTEXTS_FILE = path.join(CANVAS_USER_HOME, 'contexts.json');
+const WORKSPACES_FILE = path.join(CANVAS_USER_HOME, 'workspaces.json');
+const SESSION_CLI_FILE = path.join(CANVAS_USER_HOME, 'session-cli.json');
+
+// Default configuration for main config (simplified for resource address schema)
 const DEFAULT_CONFIG = {
-    server: {
-        url: 'http://localhost:8001/rest/v2',
-        auth: {
-            type: 'token',
-            token: 'canvas-server-token',
-        },
-    },
-    session: {
-        context: {
-            id: 'default',
-            clientArray: generateClientContextArray(),
-        }
-    },
     connectors: {
         ollama: {
             driver: 'ollama',
@@ -83,6 +79,17 @@ const DEFAULT_CONFIG = {
     }
 };
 
+// Default remote configuration (empty - users must add remotes explicitly)
+const DEFAULT_REMOTE_CONFIG = {};
+
+// Default session configuration
+const DEFAULT_SESSION_CONFIG = {
+    boundRemote: null,
+    defaultWorkspace: null,
+    boundContext: null,
+    boundAt: null
+};
+
 const CLIENT_CONTEXT_ARRAY = generateClientContextArray();
 
 const EXIT_CODES = {
@@ -91,6 +98,7 @@ const EXIT_CODES = {
     SUCCESS: 0,
 };
 
+// Main config using Conf library
 const config = new Conf({
     projectName: 'canvas',
     configName: 'canvas-cli',
@@ -98,6 +106,179 @@ const config = new Conf({
     defaults: DEFAULT_CONFIG,
     configFileMode: 0o600, // Secure file permissions
 });
+
+/**
+ * Remote management utilities
+ */
+class RemoteStore {
+    constructor() {
+        this.remotesFile = REMOTES_FILE;
+        this.contextsFile = CONTEXTS_FILE;
+        this.workspacesFile = WORKSPACES_FILE;
+        this.sessionFile = SESSION_CLI_FILE;
+        this.ensureFiles();
+    }
+
+    async ensureFiles() {
+        // Ensure directory exists
+        await fs.mkdir(CANVAS_USER_HOME, { recursive: true });
+
+        // Initialize files if they don't exist
+        if (!existsSync(this.remotesFile)) {
+            await this.writeFile(this.remotesFile, DEFAULT_REMOTE_CONFIG);
+        }
+        if (!existsSync(this.contextsFile)) {
+            await this.writeFile(this.contextsFile, {});
+        }
+        if (!existsSync(this.workspacesFile)) {
+            await this.writeFile(this.workspacesFile, {});
+        }
+        if (!existsSync(this.sessionFile)) {
+            await this.writeFile(this.sessionFile, DEFAULT_SESSION_CONFIG);
+        }
+    }
+
+    async readFile(filePath) {
+        try {
+            const content = await fs.readFile(filePath, 'utf8');
+            return JSON.parse(content);
+        } catch (error) {
+            debug(`Error reading ${filePath}:`, error.message);
+            return {};
+        }
+    }
+
+    async writeFile(filePath, data) {
+        try {
+            await fs.writeFile(filePath, JSON.stringify(data, null, 2), { mode: 0o600 });
+        } catch (error) {
+            debug(`Error writing ${filePath}:`, error.message);
+            throw error;
+        }
+    }
+
+    // Remote management
+    async getRemotes() {
+        return this.readFile(this.remotesFile);
+    }
+
+    async getRemote(remoteId) {
+        const remotes = await this.getRemotes();
+        return remotes[remoteId] || null;
+    }
+
+    async addRemote(remoteId, remoteConfig) {
+        const remotes = await this.getRemotes();
+        remotes[remoteId] = {
+            ...remoteConfig,
+            lastSynced: new Date().toISOString()
+        };
+        await this.writeFile(this.remotesFile, remotes);
+    }
+
+    async removeRemote(remoteId) {
+        const remotes = await this.getRemotes();
+        delete remotes[remoteId];
+        await this.writeFile(this.remotesFile, remotes);
+
+        // Also clean up contexts and workspaces for this remote
+        await this.cleanupRemoteData(remoteId);
+    }
+
+    async updateRemote(remoteId, updates) {
+        const remotes = await this.getRemotes();
+        if (remotes[remoteId]) {
+            remotes[remoteId] = { ...remotes[remoteId], ...updates };
+            await this.writeFile(this.remotesFile, remotes);
+        }
+    }
+
+    // Context management
+    async getContexts() {
+        return this.readFile(this.contextsFile);
+    }
+
+    async getContext(contextKey) {
+        const contexts = await this.getContexts();
+        return contexts[contextKey] || null;
+    }
+
+    async updateContext(contextKey, contextData) {
+        const contexts = await this.getContexts();
+        contexts[contextKey] = {
+            ...contextData,
+            lastSynced: new Date().toISOString()
+        };
+        await this.writeFile(this.contextsFile, contexts);
+    }
+
+    async removeContext(contextKey) {
+        const contexts = await this.getContexts();
+        delete contexts[contextKey];
+        await this.writeFile(this.contextsFile, contexts);
+    }
+
+    // Workspace management
+    async getWorkspaces() {
+        return this.readFile(this.workspacesFile);
+    }
+
+    async getWorkspace(workspaceKey) {
+        const workspaces = await this.getWorkspaces();
+        return workspaces[workspaceKey] || null;
+    }
+
+    async updateWorkspace(workspaceKey, workspaceData) {
+        const workspaces = await this.getWorkspaces();
+        workspaces[workspaceKey] = {
+            ...workspaceData,
+            lastSynced: new Date().toISOString()
+        };
+        await this.writeFile(this.workspacesFile, workspaces);
+    }
+
+    async removeWorkspace(workspaceKey) {
+        const workspaces = await this.getWorkspaces();
+        delete workspaces[workspaceKey];
+        await this.writeFile(this.workspacesFile, workspaces);
+    }
+
+    // Session management
+    async getSession() {
+        return this.readFile(this.sessionFile);
+    }
+
+    async updateSession(updates) {
+        const session = await this.getSession();
+        const updatedSession = { ...session, ...updates };
+        await this.writeFile(this.sessionFile, updatedSession);
+    }
+
+    // Cleanup helper
+    async cleanupRemoteData(remoteId) {
+        // Remove contexts for this remote
+        const contexts = await this.getContexts();
+        const contextPrefix = `${remoteId}:`;
+        for (const key in contexts) {
+            if (key.startsWith(contextPrefix)) {
+                delete contexts[key];
+            }
+        }
+        await this.writeFile(this.contextsFile, contexts);
+
+        // Remove workspaces for this remote
+        const workspaces = await this.getWorkspaces();
+        for (const key in workspaces) {
+            if (key.startsWith(contextPrefix)) {
+                delete workspaces[key];
+            }
+        }
+        await this.writeFile(this.workspacesFile, workspaces);
+    }
+}
+
+// Create singleton instance
+const remoteStore = new RemoteStore();
 
 export default config;
 export {
@@ -107,6 +288,11 @@ export {
     CANVAS_USER_CONFIG,
     CLIENT_CONTEXT_ARRAY,
     EXIT_CODES,
+    remoteStore,
+    REMOTES_FILE,
+    CONTEXTS_FILE,
+    WORKSPACES_FILE,
+    SESSION_CLI_FILE,
 };
 
 /**

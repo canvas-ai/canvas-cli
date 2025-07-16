@@ -72,10 +72,10 @@ export class ContextCommand extends BaseCommand {
      * Show context details
      */
     async handleShow(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextAddress = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
-            const response = await this.apiClient.getContext(contextId);
+            const response = await this.apiClient.getContext(contextAddress);
             let context = response.payload || response.data || response;
 
             // Extract context from nested response if needed
@@ -122,6 +122,7 @@ export class ContextCommand extends BaseCommand {
         }
 
         try {
+            // Create on current default remote
             const response = await this.apiClient.createContext(contextData);
             let context = response.payload || response.data || response;
 
@@ -142,20 +143,20 @@ export class ContextCommand extends BaseCommand {
      * Delete context (destroy)
      */
     async handleDestroy(parsed) {
-        const contextId = parsed.args[1];
-        if (!contextId) {
-            throw new Error('Context ID is required');
+        const contextAddress = parsed.args[1];
+        if (!contextAddress) {
+            throw new Error('Context address is required (format: user@remote:context or just context if default remote is bound)');
         }
 
         if (!parsed.options.force) {
-            console.log(chalk.yellow(`Warning: This will permanently delete context '${contextId}' and all its documents.`));
+            console.log(chalk.yellow(`Warning: This will permanently delete context '${contextAddress}' and all its documents.`));
             console.log(chalk.yellow('Use --force to confirm deletion.'));
             return 1;
         }
 
         try {
-            await this.apiClient.deleteContext(contextId);
-            console.log(chalk.green(`✓ Context '${contextId}' destroyed successfully`));
+            await this.apiClient.deleteContext(contextAddress);
+            console.log(chalk.green(`✓ Context '${contextAddress}' destroyed successfully`));
             return 0;
         } catch (error) {
             throw new Error(`Failed to destroy context: ${error.message}`);
@@ -170,26 +171,22 @@ export class ContextCommand extends BaseCommand {
     }
 
     async handleBind(parsed) {
-        const contextId = parsed.args[1];
-        if (!contextId) {
-            throw new Error('Context ID is required');
+        const contextAddress = parsed.args[1];
+        if (!contextAddress) {
+            throw new Error('Context address is required (format: user@remote:context or just context if default remote is bound)');
         }
 
         try {
-            // Verify context exists (optional - we could skip this check)
-            // const response = await this.apiClient.getContext(contextId);
-            // const context = response.payload || response.data || response;
+            // Update session with bound context
+            await this.apiClient.remoteStore.updateSession({
+                boundContext: contextAddress,
+                boundAt: new Date().toISOString()
+            });
 
-            // Update config - store context ID
-            this.config.set('session.context.id', contextId);
-
-            console.log(chalk.green(`✓ Switched to context '${contextId}'`));
+            console.log(chalk.green(`✓ Switched to context '${contextAddress}'`));
             return 0;
         } catch (error) {
-            // If context doesn't exist, still allow binding (as per requirement)
-            this.config.set('session.context.id', contextId);
-            console.log(chalk.yellow(`⚠ Switched to context '${contextId}' (context may not exist on server)`));
-            return 0;
+            throw new Error(`Failed to bind context: ${error.message}`);
         }
     }
 
@@ -386,27 +383,37 @@ export class ContextCommand extends BaseCommand {
      * Show current context
      */
     async handleCurrent(parsed) {
-        const currentContext = this.getCurrentContext(parsed.options);
-        const currentUrl = this.config.get('session.context.url');
-
-        console.log(chalk.cyan('Current context ID:'), currentContext);
-        if (currentUrl) {
-            console.log(chalk.cyan('Current context URL:'), currentUrl);
-        }
-
         try {
-            const response = await this.apiClient.getContext(currentContext);
-            let context = response.payload || response.data || response;
+            const currentContextAddress = await this.getCurrentContext(parsed.options);
+            const session = await this.apiClient.remoteStore.getSession();
 
-            // Extract context from nested response if needed
-            if (context && context.context) {
-                context = context.context;
+            console.log(chalk.cyan('Current context:'), currentContextAddress);
+            if (session.boundRemote) {
+                console.log(chalk.cyan('Default remote:'), session.boundRemote);
+            }
+            if (session.boundAt) {
+                console.log(chalk.cyan('Bound at:'), new Date(session.boundAt).toLocaleString());
             }
 
-            this.output(context, 'context');
-            return 0;
+            try {
+                const response = await this.apiClient.getContext(currentContextAddress);
+                let context = response.payload || response.data || response;
+
+                // Extract context from nested response if needed
+                if (context && context.context) {
+                    context = context.context;
+                }
+
+                this.output(context, 'context');
+                return 0;
+            } catch (error) {
+                console.log(chalk.yellow('Warning: Current context not found on server'));
+                return 1;
+            }
         } catch (error) {
-            console.log(chalk.yellow('Warning: Current context not found on server'));
+            console.log(chalk.red('No current context set.'));
+            console.log(chalk.cyan('Use: canvas context bind <context-address>'));
+            console.log(chalk.cyan('Or: canvas remote bind <user@remote> first'));
             return 1;
         }
     }
@@ -449,10 +456,10 @@ export class ContextCommand extends BaseCommand {
      * List all documents in context
      */
     async handleDocuments(parsed) {
-        const contextId = parsed.args[1] || this.getCurrentContext(parsed.options);
+        const contextAddress = parsed.args[1] || await this.getCurrentContext(parsed.options);
 
         try {
-            const response = await this.apiClient.getDocuments(contextId, 'context');
+            const response = await this.apiClient.getDocuments(contextAddress, 'context');
             const documents = response.payload || response.data || response;
 
             if (Array.isArray(documents) && documents.length === 0) {
@@ -501,13 +508,13 @@ export class ContextCommand extends BaseCommand {
      * List tabs in context
      */
     async handleTabList(parsed) {
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextAddress = await this.getCurrentContext(parsed.options);
 
         try {
             const options = {
                 featureArray: ['data/abstraction/tab']
             };
-            const response = await this.apiClient.getDocuments(contextId, 'context', options);
+            const response = await this.apiClient.getDocuments(contextAddress, 'context', options);
             const tabs = response.payload || response.data || response;
 
             if (Array.isArray(tabs) && tabs.length === 0) {
@@ -531,7 +538,7 @@ export class ContextCommand extends BaseCommand {
             throw new Error('URL is required for adding a tab');
         }
 
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextAddress = await this.getCurrentContext(parsed.options);
         const title = parsed.options.title || url;
 
         const tabDocument = {
@@ -545,7 +552,7 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const featureArray = ['data/abstraction/tab'];
-            const response = await this.apiClient.createDocument(contextId, tabDocument, 'context', featureArray);
+            const response = await this.apiClient.createDocument(contextAddress, tabDocument, 'context', featureArray);
             const result = response.payload || response.data || response;
 
             console.log(chalk.green(`✓ Tab added successfully`));
@@ -640,13 +647,13 @@ export class ContextCommand extends BaseCommand {
      * List notes in context
      */
     async handleNoteList(parsed) {
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextAddress = await this.getCurrentContext(parsed.options);
 
         try {
             const options = {
                 featureArray: ['data/abstraction/note']
             };
-            const response = await this.apiClient.getDocuments(contextId, 'context', options);
+            const response = await this.apiClient.getDocuments(contextAddress, 'context', options);
             const notes = response.payload || response.data || response;
 
             if (Array.isArray(notes) && notes.length === 0) {
@@ -670,7 +677,7 @@ export class ContextCommand extends BaseCommand {
             throw new Error('Note text is required');
         }
 
-        const contextId = this.getCurrentContext(parsed.options);
+        const contextAddress = await this.getCurrentContext(parsed.options);
         const title = parsed.options.title || `Note - ${new Date().toLocaleString()}`;
 
         const noteDocument = {
@@ -684,7 +691,7 @@ export class ContextCommand extends BaseCommand {
 
         try {
             const featureArray = ['data/abstraction/note'];
-            const response = await this.apiClient.createDocument(contextId, noteDocument, 'context', featureArray);
+            const response = await this.apiClient.createDocument(contextAddress, noteDocument, 'context', featureArray);
 
             // Handle ResponseObject format
             const result = response.payload || response.data || response;
@@ -929,26 +936,26 @@ export class ContextCommand extends BaseCommand {
         console.log('  document delete <id...> Delete documents from database (permanent)');
         console.log('  document remove <id...> Remove documents from context');
         console.log();
+        console.log(chalk.bold('Address Format:'));
+        console.log('  user@remote:context              Full resource address');
+        console.log('  context                          Short form (uses default remote)');
+        console.log();
         console.log(chalk.bold('Options:'));
-        console.log('  --description <desc>  Context description');
-        console.log('  --color <value>       Context color');
-        console.log('  --metadata <json>     Context metadata (JSON string)');
-        console.log('  --title <title>       Title for documents (e.g., tabs, notes)');
-        console.log('  --force               Force deletion without confirmation');
+        console.log('  --description <desc>             Context description');
+        console.log('  --color <value>                  Context color');
+        console.log('  --metadata <json>                Context metadata (JSON string)');
+        console.log('  --title <title>                  Title for documents (e.g., tabs, notes)');
+        console.log('  --force                          Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
-        console.log('  canvas context                    # Show current context');
-        console.log('  canvas contexts                   # List all contexts (alias)');
-        console.log('  canvas context list');
-        console.log('  canvas context create my-project');
+        console.log('  canvas context                               # Show current context');
+        console.log('  canvas context list                         # List contexts from default remote');
+        console.log('  canvas context create my-project            # Create on default remote');
         console.log('  canvas context create work-proj work://acme-org/devops/jira-1234');
-        console.log('  canvas context create travel /travel --description "Travel Plans"');
-        console.log('  canvas context switch my-project');
-        console.log('  canvas context set universe://new/path');
-        console.log('  canvas context url');
-        console.log('  canvas context tree');
-        console.log('  canvas context destroy old-project --force');
-        console.log('  canvas context notes              # List notes');
+        console.log('  canvas context switch admin@canvas.local:my-project  # Full address');
+        console.log('  canvas context switch my-project           # Uses default remote');
+        console.log('  canvas context destroy user@work.server:old-project --force');
+        console.log('  canvas context notes                        # List notes in current context');
         console.log('  canvas context note add "Remember to check logs" --title "Important"');
         console.log();
         console.log(chalk.bold('Document Examples:'));
@@ -967,11 +974,13 @@ export class ContextCommand extends BaseCommand {
         console.log('  • Contexts are views/filters on top of your data');
         console.log('  • Context URLs: workspace://path (e.g., work://acme-org/devops/jira-1234)');
         console.log('  • Default workspace is "universe" for relative paths');
-        console.log('  • CLI binds to "default" context by default');
         console.log('  • Delete = permanent removal from database');
         console.log('  • Remove = remove from context only (like removing symlinks)');
         console.log('  • For contexts: only destroy is available (removes entire context)');
         console.log('  • For documents: both delete and remove are available');
+        console.log();
+        console.log(chalk.cyan('Note: Set up remotes first with: canvas remote add <user@remote> <url>'));
+        console.log(chalk.cyan('      Then bind to default: canvas remote bind <user@remote>'));
     }
 }
 

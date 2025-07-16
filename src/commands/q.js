@@ -43,9 +43,8 @@ export class QCommand extends BaseCommand {
             // But we'll try to get context info if available
             let currentContext = null;
             try {
-                await this.checkConnection();
-                const contextId = this.getCurrentContext(parsed.options);
-                const response = await this.apiClient.getContext(contextId);
+                const contextAddress = await this.getCurrentContext(parsed.options);
+                const response = await this.apiClient.getContext(contextAddress);
                 currentContext = response.payload || response.data || response;
 
                 // Extract context from nested response if needed
@@ -53,7 +52,7 @@ export class QCommand extends BaseCommand {
                     currentContext = currentContext.context;
                 }
             } catch (error) {
-                this.debug('Could not fetch context info (server may be offline):', error.message);
+                this.debug('Could not fetch context info (server may be offline or no default remote):', error.message);
                 // Continue without context info
             }
 

@@ -101,13 +101,13 @@ export class WorkspaceCommand extends BaseCommand {
      * Show workspace details
      */
     async handleShow(parsed) {
-        const workspaceId = parsed.args[1];
-        if (!workspaceId) {
-            throw new Error('Workspace ID is required');
+        const workspaceAddress = parsed.args[1];
+        if (!workspaceAddress) {
+            throw new Error('Workspace address is required (format: user@remote:workspace or just workspace if default remote is bound)');
         }
 
         try {
-            const response = await this.apiClient.getWorkspace(workspaceId);
+            const response = await this.apiClient.getWorkspace(workspaceAddress);
 
             // Handle ResponseObject format
             let workspace = response.payload || response.data || response;
@@ -143,6 +143,7 @@ export class WorkspaceCommand extends BaseCommand {
         };
 
         try {
+            // Create on current default remote
             const response = await this.apiClient.createWorkspace(workspaceData);
 
             // Handle ResponseObject format
@@ -160,9 +161,9 @@ export class WorkspaceCommand extends BaseCommand {
      * Update workspace
      */
     async handleUpdate(parsed) {
-        const workspaceId = parsed.args[1];
-        if (!workspaceId) {
-            throw new Error('Workspace ID is required');
+        const workspaceAddress = parsed.args[1];
+        if (!workspaceAddress) {
+            throw new Error('Workspace address is required (format: user@remote:workspace or just workspace if default remote is bound)');
         }
 
         const updateData = {};
@@ -176,12 +177,12 @@ export class WorkspaceCommand extends BaseCommand {
         }
 
         try {
-            const response = await this.apiClient.updateWorkspace(workspaceId, updateData);
+            const response = await this.apiClient.updateWorkspace(workspaceAddress, updateData);
 
             // Handle ResponseObject format
             const workspace = response.payload || response.data || response;
 
-            console.log(chalk.green(`✓ Workspace '${workspaceId}' updated successfully`));
+            console.log(chalk.green(`✓ Workspace '${workspaceAddress}' updated successfully`));
             this.output(workspace, 'workspace');
             return 0;
         } catch (error) {
@@ -193,20 +194,20 @@ export class WorkspaceCommand extends BaseCommand {
      * Delete workspace
      */
     async handleDelete(parsed) {
-        const workspaceId = parsed.args[1];
-        if (!workspaceId) {
-            throw new Error('Workspace ID is required');
+        const workspaceAddress = parsed.args[1];
+        if (!workspaceAddress) {
+            throw new Error('Workspace address is required (format: user@remote:workspace or just workspace if default remote is bound)');
         }
 
         if (!parsed.options.force) {
-            console.log(chalk.yellow(`Warning: This will permanently delete workspace '${workspaceId}' and all its data.`));
+            console.log(chalk.yellow(`Warning: This will permanently delete workspace '${workspaceAddress}' and all its data.`));
             console.log(chalk.yellow('Use --force to confirm deletion.'));
             return 1;
         }
 
         try {
-            await this.apiClient.deleteWorkspace(workspaceId);
-            console.log(chalk.green(`✓ Workspace '${workspaceId}' deleted successfully`));
+            await this.apiClient.deleteWorkspace(workspaceAddress);
+            console.log(chalk.green(`✓ Workspace '${workspaceAddress}' deleted successfully`));
             return 0;
         } catch (error) {
             throw new Error(`Failed to delete workspace: ${error.message}`);
@@ -217,18 +218,18 @@ export class WorkspaceCommand extends BaseCommand {
      * Start workspace
      */
     async handleStart(parsed) {
-        const workspaceId = parsed.args[1];
-        if (!workspaceId) {
-            throw new Error('Workspace ID is required');
+        const workspaceAddress = parsed.args[1];
+        if (!workspaceAddress) {
+            throw new Error('Workspace address is required (format: user@remote:workspace or just workspace if default remote is bound)');
         }
 
         try {
-            const response = await this.apiClient.startWorkspace(workspaceId);
+            const response = await this.apiClient.startWorkspace(workspaceAddress);
 
             // Handle ResponseObject format
             const workspace = response.payload || response.data || response;
 
-            console.log(chalk.green(`✓ Workspace '${workspaceId}' started successfully`));
+            console.log(chalk.green(`✓ Workspace '${workspaceAddress}' started successfully`));
             this.output(workspace, 'workspace');
             return 0;
         } catch (error) {
@@ -240,18 +241,18 @@ export class WorkspaceCommand extends BaseCommand {
      * Stop workspace
      */
     async handleStop(parsed) {
-        const workspaceId = parsed.args[1];
-        if (!workspaceId) {
-            throw new Error('Workspace ID is required');
+        const workspaceAddress = parsed.args[1];
+        if (!workspaceAddress) {
+            throw new Error('Workspace address is required (format: user@remote:workspace or just workspace if default remote is bound)');
         }
 
         try {
-            const response = await this.apiClient.stopWorkspace(workspaceId);
+            const response = await this.apiClient.stopWorkspace(workspaceAddress);
 
             // Handle ResponseObject format
             const result = response.payload || response.data || response;
 
-            console.log(chalk.green(`✓ Workspace '${workspaceId}' stopped successfully`));
+            console.log(chalk.green(`✓ Workspace '${workspaceAddress}' stopped successfully`));
             return 0;
         } catch (error) {
             throw new Error(`Failed to stop workspace: ${error.message}`);
@@ -331,13 +332,13 @@ export class WorkspaceCommand extends BaseCommand {
      * List all documents in workspace
      */
     async handleDocuments(parsed) {
-        const workspaceId = parsed.args[1];
-        if (!workspaceId) {
-            throw new Error('Workspace ID is required');
+        const workspaceAddress = parsed.args[1];
+        if (!workspaceAddress) {
+            throw new Error('Workspace address is required (format: user@remote:workspace or just workspace if default remote is bound)');
         }
 
         try {
-            const response = await this.apiClient.getDocuments(workspaceId, 'workspace');
+            const response = await this.apiClient.getDocuments(workspaceAddress, 'workspace');
 
             // Handle ResponseObject format
             const documents = response.payload || response.data || response;
@@ -491,37 +492,40 @@ export class WorkspaceCommand extends BaseCommand {
      */
     showHelp() {
         console.log(chalk.bold('Workspace Commands:'));
-        console.log('  list                  List all workspaces');
-        console.log('  show <id>             Show workspace details');
-        console.log('  create <name>         Create new workspace');
-        console.log('  update <id>           Update workspace');
-        console.log('  delete <id>           Delete workspace');
-        console.log('  start <id>            Start workspace');
-        console.log('  stop <id>             Stop workspace');
-        console.log('  open <id>             Open workspace');
-        console.log('  close <id>            Close workspace');
-        console.log('  status <id>           Show workspace status');
-        console.log('  documents <id>        List documents in workspace');
-        console.log('  tabs <id>             List tabs in workspace');
-        console.log('  notes <id>            List notes in workspace');
-        console.log('  tree <id>             Show workspace tree');
+        console.log('  list                           List all workspaces from default remote');
+        console.log('  show <address>                 Show workspace details');
+        console.log('  create <name>                  Create new workspace on default remote');
+        console.log('  update <address>               Update workspace');
+        console.log('  delete <address>               Delete workspace');
+        console.log('  start <address>                Start workspace');
+        console.log('  stop <address>                 Stop workspace');
+        console.log('  documents <address>            List documents in workspace');
+        console.log('  tabs <address>                 List tabs in workspace');
+        console.log('  notes <address>                List notes in workspace');
+        console.log('  tree <address>                 Show workspace tree');
+        console.log();
+        console.log(chalk.bold('Address Format:'));
+        console.log('  user@remote:workspace          Full resource address');
+        console.log('  workspace                      Short form (uses default remote)');
         console.log();
         console.log(chalk.bold('Options:'));
-        console.log('  --label <label>       Workspace label');
-        console.log('  --description <desc>  Workspace description');
-        console.log('  --color <color>       Workspace color (hex)');
-        console.log('  --type <type>         Workspace type (workspace, universe)');
-        console.log('  --metadata <json>     Workspace metadata (JSON string)');
-        console.log('  --force               Force deletion without confirmation');
+        console.log('  --label <label>                Workspace label');
+        console.log('  --description <desc>           Workspace description');
+        console.log('  --color <color>                Workspace color (hex)');
+        console.log('  --type <type>                  Workspace type (workspace, universe)');
+        console.log('  --metadata <json>              Workspace metadata (JSON string)');
+        console.log('  --force                        Force deletion without confirmation');
         console.log();
         console.log(chalk.bold('Examples:'));
         console.log('  canvas workspace list');
-        console.log('  canvas workspace show universe');
+        console.log('  canvas workspace show admin@canvas.local:universe');
+        console.log('  canvas workspace show universe                    # Uses default remote');
         console.log('  canvas workspace create my-workspace --description "My workspace"');
-        console.log('  canvas workspace start universe');
-        console.log('  canvas workspace documents universe');
-        console.log('  canvas workspace tree universe');
+        console.log('  canvas workspace start admin@canvas.local:universe');
+        console.log('  canvas workspace documents user@work.server:reports');
         console.log('  canvas workspace delete old-workspace --force');
+        console.log();
+        console.log(chalk.cyan('Note: Set a default remote with: canvas remote bind <user@remote>'));
     }
 }
 
