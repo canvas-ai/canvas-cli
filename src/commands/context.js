@@ -56,11 +56,6 @@ export class ContextCommand extends BaseCommand {
             const response = await this.apiClient.getContexts();
             const contexts = response.payload || response.data || response;
 
-            if (Array.isArray(contexts) && contexts.length === 0) {
-                console.log(chalk.yellow('No contexts found'));
-                return 0;
-            }
-
             this.output(contexts, 'context');
             return 0;
         } catch (error) {
@@ -462,11 +457,6 @@ export class ContextCommand extends BaseCommand {
             const response = await this.apiClient.getDocuments(contextAddress, 'context');
             const documents = response.payload || response.data || response;
 
-            if (Array.isArray(documents) && documents.length === 0) {
-                console.log(chalk.yellow('No documents found in this context'));
-                return 0;
-            }
-
             this.output(documents, 'document');
             return 0;
         } catch (error) {
@@ -516,11 +506,6 @@ export class ContextCommand extends BaseCommand {
             };
             const response = await this.apiClient.getDocuments(contextAddress, 'context', options);
             const tabs = response.payload || response.data || response;
-
-            if (Array.isArray(tabs) && tabs.length === 0) {
-                console.log(chalk.yellow('No tabs found in this context'));
-                return 0;
-            }
 
             this.output(tabs, 'document', 'tab');
             return 0;
@@ -655,11 +640,6 @@ export class ContextCommand extends BaseCommand {
             };
             const response = await this.apiClient.getDocuments(contextAddress, 'context', options);
             const notes = response.payload || response.data || response;
-
-            if (Array.isArray(notes) && notes.length === 0) {
-                console.log(chalk.yellow('No notes found in this context'));
-                return 0;
-            }
 
             this.output(notes, 'document', 'note');
             return 0;

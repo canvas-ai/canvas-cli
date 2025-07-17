@@ -85,11 +85,6 @@ export class WorkspaceCommand extends BaseCommand {
             // Handle ResponseObject format
             const workspaces = response.payload || response.data || response;
 
-            if (Array.isArray(workspaces) && workspaces.length === 0) {
-                console.log(chalk.yellow('No workspaces found'));
-                return 0;
-            }
-
             this.output(workspaces, 'workspace');
             return 0;
         } catch (error) {
@@ -343,11 +338,6 @@ export class WorkspaceCommand extends BaseCommand {
             // Handle ResponseObject format
             const documents = response.payload || response.data || response;
 
-            if (Array.isArray(documents) && documents.length === 0) {
-                console.log(chalk.yellow('No documents found in this workspace'));
-                return 0;
-            }
-
             this.output(documents, 'document');
             return 0;
         } catch (error) {
@@ -372,11 +362,6 @@ export class WorkspaceCommand extends BaseCommand {
 
             // Handle ResponseObject format
             const tabs = response.payload || response.data || response;
-
-            if (Array.isArray(tabs) && tabs.length === 0) {
-                console.log(chalk.yellow('No tabs found in this workspace'));
-                return 0;
-            }
 
             this.output(tabs, 'document', 'tab');
             return 0;
@@ -418,11 +403,6 @@ export class WorkspaceCommand extends BaseCommand {
 
             // Handle ResponseObject format
             const notes = response.payload || response.data || response;
-
-            if (Array.isArray(notes) && notes.length === 0) {
-                console.log(chalk.yellow('No notes found in this workspace'));
-                return 0;
-            }
 
             this.output(notes, 'document', 'note');
             return 0;

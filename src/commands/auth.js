@@ -109,11 +109,6 @@ export class AuthCommand extends BaseCommand {
             // Handle ResponseObject format
             const tokens = response.payload || response.data || response;
 
-            if (Array.isArray(tokens) && tokens.length === 0) {
-                console.log(chalk.yellow('No API tokens found'));
-                return 0;
-            }
-
             this.output(tokens, 'auth');
             return 0;
         } catch (error) {

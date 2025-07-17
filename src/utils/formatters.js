@@ -444,17 +444,54 @@ export class ContextFormatter extends BaseFormatter {
  */
 export class DocumentFormatter extends BaseFormatter {
     formatTable(data, schema = null) {
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-            const docType = schema ? schema.name.toLowerCase() : 'document';
+        if (!data || (Array.isArray(data) && data.length === 0) ||
+            (typeof data === 'object' && Object.keys(data).length === 0)) {
+            const docType = schema ? (typeof schema === 'string' ? schema : schema.name).toLowerCase() : 'document';
             return `No ${docType}s found.`;
         }
 
-        const tableData = Array.isArray(data) ? data : [data];
+        // Handle case where data is wrapped in another object (e.g., workspace documents)
+        let tableData = Array.isArray(data) ? data : [data];
+
+        // Check if data is a single object containing an array (common in some API responses)
+        if (tableData.length === 1 && !tableData[0].id && !tableData[0].schema) {
+            const singleItem = tableData[0];
+            // Look for array properties that might contain the actual documents
+            for (const key of Object.keys(singleItem)) {
+                if (Array.isArray(singleItem[key]) && singleItem[key].length > 0) {
+                    // Check if the array contains document-like objects
+                    const firstArrayItem = singleItem[key][0];
+                    if (firstArrayItem && (firstArrayItem.id || firstArrayItem.schema)) {
+                        tableData = singleItem[key];
+                        break;
+                    }
+                }
+            }
+        }
+
         let table;
 
         if (Array.isArray(tableData) && tableData.length > 0) {
             const firstItem = tableData[0];
-            const docType = firstItem.type || 'document';
+
+            // Determine document type from multiple sources
+            let docType = 'document';
+
+            // 1. Check if schema parameter was explicitly passed
+            if (schema && typeof schema === 'string') {
+                docType = schema.toLowerCase();
+            }
+            // 2. Check document's type field
+            else if (firstItem.type) {
+                docType = firstItem.type.toLowerCase();
+            }
+            // 3. Extract type from document's schema field (e.g., "data/abstraction/tab" -> "tab")
+            else if (firstItem.schema && typeof firstItem.schema === 'string') {
+                const schemaParts = firstItem.schema.split('/');
+                if (schemaParts.length > 0) {
+                    docType = schemaParts[schemaParts.length - 1].toLowerCase();
+                }
+            }
 
             switch (docType) {
                 case 'note':
@@ -635,9 +672,7 @@ export class DocumentFormatter extends BaseFormatter {
         const table = new Table({
             head: [
                 chalk.cyan('ID'),
-                chalk.cyan('Title'),
                 chalk.cyan('URL'),
-                chalk.cyan('Domain'),
                 chalk.cyan('Created')
             ],
             style: { head: [], border: [] }
@@ -647,23 +682,10 @@ export class DocumentFormatter extends BaseFormatter {
             // Handle nested data structure - tab data is under doc.data
             const tabData = doc.data || {};
             const url = tabData.url || 'N/A';
-            const title = tabData.title || url;
-
-            // Extract domain from URL
-            let domain = 'N/A';
-            try {
-                if (url && url !== 'N/A') {
-                    domain = new URL(url).hostname;
-                }
-            } catch (e) {
-                domain = 'N/A';
-            }
 
             table.push([
                 doc.id || 'N/A',
-                this.truncate(title, 25),
-                this.truncate(url, 40),
-                domain,
+                this.truncate(url, 60),
                 this.formatDate(doc.createdAt)
             ]);
         });
@@ -693,6 +715,11 @@ export class DocumentFormatter extends BaseFormatter {
  */
 export class AuthFormatter extends BaseFormatter {
     formatTable(data) {
+        if (!data || (Array.isArray(data) && data.length === 0) ||
+            (typeof data === 'object' && Object.keys(data).length === 0)) {
+            return 'No API tokens found.';
+        }
+
         if (!Array.isArray(data)) {
             data = [data];
         }
