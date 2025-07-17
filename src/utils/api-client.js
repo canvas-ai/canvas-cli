@@ -540,6 +540,11 @@ export class CanvasApiClient {
         return await apiClient.stopWorkspace(resourceId);
     }
 
+    async getWorkspaceTree(addressOrId) {
+        const { apiClient, resourceId } = await this.resolveResource(addressOrId);
+        return await apiClient.getWorkspaceTree(resourceId);
+    }
+
     /**
      * Context operations with resource address support
      */

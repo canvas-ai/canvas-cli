@@ -443,22 +443,43 @@ export class ContextFormatter extends BaseFormatter {
  * Document formatter
  */
 export class DocumentFormatter extends BaseFormatter {
-    formatTable(data, schema) {
-        if (!Array.isArray(data)) {
-            data = [data];
+    formatTable(data, schema = null) {
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+            const docType = schema ? schema.name.toLowerCase() : 'document';
+            return `No ${docType}s found.`;
         }
 
-        if (data.length === 0 || !data[0]) {
-            return chalk.yellow('No data found');
+        const tableData = Array.isArray(data) ? data : [data];
+        let table;
+
+        if (Array.isArray(tableData) && tableData.length > 0) {
+            const firstItem = tableData[0];
+            const docType = firstItem.type || 'document';
+
+            switch (docType) {
+                case 'note':
+                    table = this.formatNoteTable(tableData);
+                    break;
+                case 'file':
+                    table = this.formatFileTable(tableData);
+                    break;
+                case 'todo':
+                    table = this.formatTodoTable(tableData);
+                    break;
+                case 'email':
+                    table = this.formatEmailTable(tableData);
+                    break;
+                case 'tab':
+                    table = this.formatTabTable(tableData);
+                    break;
+                default:
+                    table = this.formatGenericDocumentTable(tableData);
+            }
+        } else {
+            return this.formatGenericTable(data);
         }
 
-        // Use schema-specific formatter if available
-        if (schema && this[`format${schema.charAt(0).toUpperCase() + schema.slice(1)}Table`]) {
-            return this[`format${schema.charAt(0).toUpperCase() + schema.slice(1)}Table`](data);
-        }
-
-        // For generic documents, show only essential fields
-        return this.formatGenericDocumentTable(data);
+        return table.toString();
     }
 
     formatGenericDocumentTable(data) {
